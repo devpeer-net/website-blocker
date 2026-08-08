@@ -9,7 +9,8 @@
       "!playwright-report",
       "!test-results",
       "!docs/research-brief.md",
-      "!src/styles/app.css"
+      "!src/styles/app.css",
+      "!store"
     ]
   },
   "formatter": {

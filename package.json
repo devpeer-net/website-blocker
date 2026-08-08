@@ -19,7 +19,8 @@
     "test": "pnpm test:unit && pnpm test:e2e",
     "package": "pnpm build && node scripts/package.mjs",
     "check:version": "node scripts/check-version.mjs",
-    "release:bump": "node scripts/bump-version.mjs"
+    "release:bump": "node scripts/bump-version.mjs",
+    "store:assets": "./store/make-store-assets.sh"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",

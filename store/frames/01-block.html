@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Website Blocker — 1 · the block page</title>
+<link rel="stylesheet" href="frame.css">
+<style>
+  /* Frame 1 — the promise. A navigation to a blocked site, ending on the
+     extension's own page. Capture is 512x430 CSS at 2x device scale; placed at
+     1.85x so the 14px tip text lands at 26px here. The window bleeds off the
+     bottom, which cuts nothing but the "Manage your blocked sites" footer.
+     The omnibox says what Chrome really shows after the redirect — the page is
+     served locally, which is the point of the frame. */
+  .window   { width: 1110px; }
+  .viewport { height: 640px; }
+  .viewport img { width: 947px; margin-top: -59px; }  /* crop starts at 32 CSS px */
+  .omnibox svg { width: 19px; height: 19px; flex: none; stroke: #8a93ab;
+                 stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+</style>
+</head>
+<body>
+
+<div class="canvas">
+  <div class="bg"></div>
+  <div class="stage">
+
+    <div class="copy">
+      <div class="eyebrow">Stopped before it loads</div>
+      <h1 class="headline">Block the sites that <em>eat your day</em></h1>
+    </div>
+
+    <div class="ui">
+      <div class="window">
+        <div class="chrome">
+          <div class="dots"><i></i><i></i><i></i></div>
+          <div class="omnibox">
+            <svg viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+            chrome-extension://…/blocked.html
+          </div>
+        </div>
+        <div class="viewport">
+          <img src="../captures/ui-blocked-reddit.png" alt="">
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

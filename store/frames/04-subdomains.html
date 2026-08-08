@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Website Blocker — 4 · subdomains</title>
+<link rel="stylesheet" href="frame.css">
+<style>
+  /* Frame 4 — depth. The blocklist as shipped (the page's own <section>), with
+     one callout for the behaviour the list implies but does not print: an entry
+     matches the domain and everything under it. That is a real code path —
+     matchesDomain() accepts `host === entry || host.endsWith('.' + entry)` —
+     and the block page in frame 1 is produced by it.
+
+     Same 1.9x as frame 2, so the two frames sit at the same type size. */
+  .card     { width: 1135px; padding: 28px 66px 0; }
+  .card img { width: 1003px; }
+  .callout  { right: 58px; top: 292px; }
+  .callout svg { width: 26px; height: 26px; flex: none; stroke: #07231f;
+                 stroke-width: 3; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+</style>
+</head>
+<body>
+
+<div class="canvas">
+  <div class="bg"></div>
+  <div class="stage">
+
+    <div class="copy">
+      <div class="eyebrow">Subdomains included</div>
+      <h1 class="headline">One entry covers <em>the whole domain</em></h1>
+    </div>
+
+    <div class="ui">
+      <div class="card">
+        <img src="../captures/ui-list.png" alt="">
+      </div>
+      <div class="callout">
+        <svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+        old.reddit.com is covered too
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

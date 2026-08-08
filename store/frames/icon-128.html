@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Website Blocker — store icon</title>
+<style>
+  /* 128x128 store icon.
+     Rules it follows (developer.chrome.com/docs/webstore/images):
+       · artwork occupies the middle 96x96, 16px transparent padding each side
+       · no baked-in rounded corners or shadow — Chrome applies its own 12px
+         radius and its own frame
+       · has to work on light and dark backgrounds
+       · front-facing, no dramatic perspective
+
+     It is the same mark the extension already ships (indigo shield, white
+     check) redrawn from the lucide `shield-check` geometry the options page
+     header uses, because the shipped 128px PNG is a 3-colour, 1-bit-alpha
+     bitmap with hard aliased edges and its artwork is not centred. Same mark,
+     same #3a47d1, just drawn properly.
+
+     The path's real ink bounds are x 3.458..20.54, y 1.375..22.625 in the
+     24-unit grid (wider than the nominal 4..20 / 2..22 because of the rounded
+     joins), so scale 4.5176 makes the shield exactly 96px tall and 77px wide,
+     and translate(9.78, 9.79) leaves 16px of transparent padding top and
+     bottom and 25px left and right. Measured back off the render with
+     `convert store-icon-128.png -trim info:`, not guessed. */
+  html, body { margin: 0; padding: 0; background: transparent; }
+  .icon { width: 128px; height: 128px; }
+</style>
+</head>
+<body>
+<div class="icon">
+  <svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="shield" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#4a57e2"/>
+        <stop offset="1" stop-color="#3039bd"/>
+      </linearGradient>
+    </defs>
+    <g transform="translate(9.78 9.79) scale(4.5176)">
+      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" fill="url(#shield)"/>
+      <path d="m8.7 12.1 2.4 2.4 4.2-4.2" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </svg>
+</div>
+</body>
+</html>
