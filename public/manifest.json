@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "Website Blocker",
+  "version": "1.0.0",
+  "description": "Block distracting websites. No tracking, no network calls, no accounts.",
+  "minimum_chrome_version": "121",
+
+  "icons": {
+    "16": "icons/16.png",
+    "32": "icons/32.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+
+  "_comment_permissions": "No `tabs` permission: <all_urls> host access already exposes tab.url to sweepOpenTabs(), and `tabs` would add a second install warning for nothing.",
+  "permissions": ["declarativeNetRequest", "storage"],
+  "host_permissions": ["<all_urls>"],
+
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+
+  "action": {
+    "default_title": "Website Blocker",
+    "default_icon": {
+      "16": "icons/16.png",
+      "32": "icons/32.png",
+      "128": "icons/128.png"
+    }
+  },
+
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+
+  "web_accessible_resources": [
+    {
+      "resources": ["blocked.html"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+
+  "incognito": "spanning"
+}

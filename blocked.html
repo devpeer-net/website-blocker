@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blocked</title>
+  </head>
+  <body>
+    <main class="mx-auto flex min-h-screen w-full max-w-lg flex-col justify-center px-6 py-12">
+      <p class="text-xs font-semibold uppercase tracking-wider text-fg-muted">Website Blocker</p>
+
+      <h1 class="mt-3 text-2xl font-semibold text-fg">
+        <span id="host" class="font-mono text-accent">this site</span>
+        is blocked
+      </h1>
+
+      <p class="mt-2 text-sm text-fg-muted">You asked to keep this one out of reach. Still true.</p>
+
+      <div class="mt-8 rounded-[var(--radius)] border border-border bg-surface p-5">
+        <p class="text-sm leading-relaxed text-fg">
+          <span class="font-semibold text-accent">Tip: </span><span id="tip-text"></span>
+        </p>
+        <!-- The citation link is built in main.ts once a tip is chosen. Leaving an empty
+             <a> here would be a hrefless, contentless link to a screen reader if the
+             script ever failed to run. -->
+        <p id="tip-source-slot" class="mt-3 text-xs"></p>
+      </div>
+
+      <p class="mt-8 text-sm">
+        <a
+          id="manage"
+          href="options.html"
+          class="text-fg-muted underline underline-offset-2 hover:text-fg"
+          >Manage your blocked sites</a
+        >
+      </p>
+    </main>
+    <script type="module" src="/src/blocked/main.ts"></script>
+  </body>
+</html>

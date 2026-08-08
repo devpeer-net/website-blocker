@@ -1,0 +1,82 @@
+/**
+ * Design tokens. The palette is chosen to read as productivity, focus, intelligence,
+ * clarity and health (SRS Q6):
+ *   - a cool near-white ground rather than pure white, which glares over a long session
+ *   - indigo as the primary: focus and intelligence, and 7.0:1 on the ground (AAA)
+ *   - teal reserved exclusively for "blocking is active" — health and vitality
+ *   - amber, not red, for "blocking is off": a nudge, not an alarm
+ *
+ * Three blocks so an explicit theme choice wins in both directions and the default
+ * "system" state still resolves: bare :root defines the complete light palette, the
+ * media query handles system-dark, and [data-theme='dark'] handles an explicit choice.
+ */
+
+:root {
+  --bg: #f7f9fc;
+  --surface: #ffffff;
+  --surface-2: #eef2f8;
+  --border: #dde4ee;
+  --border-strong: #c6d0de;
+  --fg: #0d1526;
+  --fg-muted: #55637a;
+  --primary: #3a47d1;
+  --primary-hover: #2f3ab2;
+  --primary-fg: #ffffff;
+  --ring: #3a47d1;
+  --accent: #0e7c6b;
+  --accent-soft: #e3f5f1;
+  --warning: #a45b06;
+  --warning-soft: #fdf3e3;
+  --danger: #c0201f;
+  --danger-hover: #a01a19;
+  /* Paired with --danger, and flipped in dark mode: the dark palette lightens --danger
+     to stay legible on a dark ground, which would leave white text unreadable on it. */
+  --danger-fg: #ffffff;
+  --radius: 10px;
+  --font-sans: "Inter Variable", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, "SF Mono", monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a0f1c;
+    --surface: #121a2b;
+    --surface-2: #182237;
+    --border: #24314a;
+    --border-strong: #33425e;
+    --fg: #e9eff9;
+    --fg-muted: #97a6bf;
+    --primary: #98a4ff;
+    --primary-hover: #b3bcff;
+    --primary-fg: #0a0f1c;
+    --ring: #98a4ff;
+    --accent: #3fd9c0;
+    --accent-soft: #10312f;
+    --warning: #f5b93c;
+    --warning-soft: #2b2113;
+    --danger: #ff8785;
+    --danger-hover: #ffa3a1;
+    --danger-fg: #0a0f1c;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0a0f1c;
+  --surface: #121a2b;
+  --surface-2: #182237;
+  --border: #24314a;
+  --border-strong: #33425e;
+  --fg: #e9eff9;
+  --fg-muted: #97a6bf;
+  --primary: #98a4ff;
+  --primary-hover: #b3bcff;
+  --primary-fg: #0a0f1c;
+  --ring: #98a4ff;
+  --accent: #3fd9c0;
+  --accent-soft: #10312f;
+  --warning: #f5b93c;
+  --warning-soft: #2b2113;
+  --danger: #ff8785;
+  --danger-hover: #ffa3a1;
+  --danger-fg: #0a0f1c;
+}

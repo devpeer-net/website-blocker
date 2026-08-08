@@ -1,0 +1,54 @@
+{
+  "name": "website-blocker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Chrome extension that blocks distracting websites. No tracking, no network calls, no accounts.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite build --watch --mode development",
+    "build": "tsc --noEmit && vite build",
+    "build:e2e": "vite build && node scripts/inject-test-key.mjs",
+    "lint": "biome ci . && tsc --noEmit",
+    "format": "biome check --write .",
+    "test:unit": "vitest run",
+    "test:e2e": "pnpm build:e2e && playwright test",
+    "test:e2e:headed": "pnpm build:e2e && HEADED=1 playwright test",
+    "test:e2e:xvfb": "pnpm build:e2e && xvfb-run -a --server-args=\"-screen 0 1280x800x24\" env HEADED=1 playwright test",
+    "test": "pnpm test:unit && pnpm test:e2e",
+    "package": "pnpm build && cd dist && zip -qr ../website-blocker.zip ."
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
+    "@fontsource-variable/jetbrains-mono": "^5.2.9",
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-switch": "^1.2.6",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.544.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tailwind-merge": "^3.3.1"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "@biomejs/biome"
+    ]
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.4",
+    "@playwright/test": "^1.56.0",
+    "@tailwindcss/vite": "^4.1.14",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.4",
+    "@vitest/coverage-v8": "^3.2.4",
+    "chrome-types": "^0.1.360",
+    "tailwindcss": "^4.1.14",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.9",
+    "vitest": "^3.2.4"
+  }
+}
