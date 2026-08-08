@@ -5,6 +5,7 @@
   "description": "Chrome extension that blocks distracting websites. No tracking, no network calls, no accounts.",
   "license": "MIT",
   "type": "module",
+  "packageManager": "pnpm@10.19.0",
   "scripts": {
     "dev": "vite build --watch --mode development",
     "build": "tsc --noEmit && vite build",
