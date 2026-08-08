@@ -3,11 +3,15 @@
  *
  * Layout, and why each key lives where it does:
  *   sync.blocked      Domain[]  the blocklist — follows the user to every signed-in Chrome
- *   sync.storeLocally boolean   user opted out of sync after hitting the 8 KB item quota
+ *   local.storeLocally boolean  this device opted out of sync after hitting the 8 KB cap
  *   local.blocked     Domain[]  the blocklist when storeLocally is set
  *   local.paused      boolean   pausing on your laptop must NOT unblock your desktop
  *   local.lastSyncError string|null  surfaced by the options page; never swallowed
  *   local.invalidEntries string[]    entries that could not be turned into rules
+ *
+ * `storeLocally` MUST stay in local storage. Synced, it would propagate to every other
+ * device, where local.blocked is empty — so each of them would read an empty blocklist,
+ * drop all their rules, and silently stop blocking anything.
  */
 import type { Domain } from '@/core/domain'
 
@@ -20,14 +24,18 @@ export interface Status {
 }
 
 export async function isStoredLocally(): Promise<boolean> {
-  const { storeLocally = false } = await chrome.storage.sync.get('storeLocally')
+  const { storeLocally = false } = await chrome.storage.local.get('storeLocally')
   return storeLocally as boolean
 }
 
 export async function getBlocklist(): Promise<Domain[]> {
   const area = (await isStoredLocally()) ? chrome.storage.local : chrome.storage.sync
   const { blocked = [] } = await area.get('blocked')
-  return Array.isArray(blocked) ? (blocked as Domain[]) : []
+  if (!Array.isArray(blocked)) return []
+  // Stored data is untrusted: it may come from a future version, a corrupted sync
+  // payload, or a hand-edited profile. A single non-string here would otherwise throw
+  // deep inside addSite and wedge the options page.
+  return blocked.filter((entry): entry is Domain => typeof entry === 'string')
 }
 
 /** Rejects if the value exceeds the storage quota — always await and catch. */
@@ -36,12 +44,18 @@ export async function setBlocklist(list: readonly Domain[]): Promise<void> {
   await area.set({ blocked: [...list] })
 }
 
-/** Move the list to device-local storage. The escape hatch when sync's 8 KB item cap bites. */
+/**
+ * Move the list to device-local storage — the escape hatch when sync's 8 KB item cap
+ * bites. Only this device is affected; other devices keep syncing normally.
+ *
+ * The synced copy is deliberately left in place. Deleting it would destroy the only
+ * off-device backup of the list to save a few kilobytes of a 100 KB quota, and this
+ * device stops reading it the moment `storeLocally` is set.
+ */
 export async function moveToLocalStorage(): Promise<void> {
   const list = await getBlocklist()
   await chrome.storage.local.set({ blocked: list })
-  await chrome.storage.sync.set({ storeLocally: true })
-  await chrome.storage.sync.remove('blocked')
+  await chrome.storage.local.set({ storeLocally: true })
 }
 
 export async function getPaused(): Promise<boolean> {
@@ -70,23 +84,29 @@ export async function getStatus(): Promise<Status> {
 }
 
 /**
- * Fire `listener` whenever anything this extension stores changes, in any area.
- * Both the service worker and the options page subscribe; storage is the only channel
- * between them, so there is no message passing anywhere in this codebase.
+ * Keys that determine the rule set. The service worker watches only these.
+ *
+ * `lastSyncError` and `invalidEntries` are deliberately excluded: syncRules() writes them
+ * on every run, so watching them would make the worker retrigger itself. Today Chrome
+ * suppresses onChanged for identical values, but that is an implementation detail to rely
+ * on, not a design.
  */
-export function onStoredStateChanged(listener: () => void): () => void {
+const RULE_INPUT_KEYS: readonly string[] = ['blocked', 'paused', 'storeLocally']
+
+/** Everything the options page renders, including the diagnostics written by a sync. */
+const UI_KEYS: readonly string[] = [...RULE_INPUT_KEYS, 'lastSyncError', 'invalidEntries']
+
+function subscribe(keys: readonly string[], listener: () => void): () => void {
   const handler = (changes: Record<string, chrome.storage.StorageChange>) => {
-    const keys = Object.keys(changes)
-    if (keys.some((k) => WATCHED_KEYS.includes(k))) listener()
+    if (Object.keys(changes).some((key) => keys.includes(key))) listener()
   }
   chrome.storage.onChanged.addListener(handler)
   return () => chrome.storage.onChanged.removeListener(handler)
 }
 
-const WATCHED_KEYS: readonly string[] = [
-  'blocked',
-  'paused',
-  'storeLocally',
-  'lastSyncError',
-  'invalidEntries',
-]
+/**
+ * Storage is the only channel between the options page and the blocking engine, so these
+ * two subscriptions are what replace message passing in this codebase.
+ */
+export const onRuleInputChanged = (listener: () => void) => subscribe(RULE_INPUT_KEYS, listener)
+export const onStoredStateChanged = (listener: () => void) => subscribe(UI_KEYS, listener)

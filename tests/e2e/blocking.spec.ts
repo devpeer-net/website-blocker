@@ -72,11 +72,13 @@ test('rejects input that is not a website, and stores nothing', async ({ options
 test('the list scrolls inside a fixed-height box instead of growing the page (Q3)', async ({
   optionsPage,
 }) => {
-  for (let i = 0; i < 25; i++) {
+  // Twelve rows comfortably overflow the box; the assertion is about overflow, not count.
+  const count = 12
+  for (let i = 0; i < count; i++) {
     await optionsPage.getByLabel('Add a website').fill(`site${i}.distraction.test`)
     await optionsPage.getByRole('button', { name: 'Add' }).click()
+    await expect(optionsPage.getByTestId('blocklist').getByRole('listitem')).toHaveCount(i + 1)
   }
-  await expect(optionsPage.getByTestId('blocklist').getByRole('listitem')).toHaveCount(25)
 
   const box = optionsPage.getByTestId('blocklist')
   const { clientHeight, scrollHeight } = await box.evaluate((el) => ({

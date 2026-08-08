@@ -19,10 +19,18 @@ export function AddSiteForm({ onAdd, disabled }: Props) {
     event.preventDefault()
     if (busy) return
     setBusy(true)
-    const message = await onAdd(value)
-    setError(message)
-    if (!message) setValue('')
-    setBusy(false)
+    try {
+      const message = await onAdd(value)
+      setError(message)
+      if (!message) setValue('')
+    } catch (error) {
+      // Without the finally below, a throw here would leave the Add button disabled for
+      // the life of the page, with no message explaining why.
+      console.error('[website-blocker] could not add site', error)
+      setError('Could not save. Please try again.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (

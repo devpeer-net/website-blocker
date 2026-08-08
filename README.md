@@ -116,7 +116,13 @@ or `pnpm test:e2e:xvfb` on a Linux box with no display.
 - **`chrome://` pages, the Web Store, and other extensions' pages** cannot be intercepted
   by any extension.
 - **List size.** Chrome syncs about 8 KB per settings item, which is a few hundred
-  domains. Past that the options page offers to keep your list on this device only.
+  domains. Past that the options page offers to keep your list on this device only — that
+  choice applies to that device alone, and your synced copy is left intact.
+- **`www.` is stripped.** `www.google.com` is stored as `google.com`, which also covers
+  `mail.google.com`. This is deliberate: keeping the `www` would mean blocking
+  `www.reddit.com` left `old.reddit.com` and bare `reddit.com` reachable, which is a
+  blocker that quietly fails to block. Over-blocking is the safe direction, and the list
+  always shows you the canonical form that was actually stored.
 - English only.
 
 ## The tips

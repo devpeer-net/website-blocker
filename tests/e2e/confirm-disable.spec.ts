@@ -39,6 +39,34 @@ test('the dialog resists casual dismissal', async ({ optionsPage }) => {
   await expectRuleState(optionsPage, SUBJECT, 'blocked')
 })
 
+// The safe choice must hold focus. Otherwise a user hammering Enter — exactly what a
+// frustrated person does — would confirm the destructive action by reflex, which is the
+// behaviour F2 exists to prevent.
+test('the safe choice holds focus, so Enter cannot disable blocking by reflex', async ({
+  optionsPage,
+}) => {
+  await optionsPage.getByRole('switch', { name: 'Blocking enabled' }).click()
+  const dialog = optionsPage.getByRole('dialog')
+  await expect(dialog).toBeVisible()
+
+  await expect(optionsPage.getByRole('button', { name: 'Keep blocking' })).toBeFocused()
+
+  await optionsPage.keyboard.press('Enter')
+  await expectRuleState(optionsPage, SUBJECT, 'blocked')
+  await expect(optionsPage.getByRole('switch', { name: 'Blocking enabled' })).toBeChecked()
+})
+
+test('keyboard activation of the switch still goes through the confirmation', async ({
+  optionsPage,
+}) => {
+  const toggle = optionsPage.getByRole('switch', { name: 'Blocking enabled' })
+  await toggle.focus()
+  await optionsPage.keyboard.press('Space')
+
+  await expect(optionsPage.getByRole('dialog')).toBeVisible()
+  await expectRuleState(optionsPage, SUBJECT, 'blocked')
+})
+
 test('cancelling leaves blocking on and the switch untouched', async ({ optionsPage }) => {
   const toggle = optionsPage.getByRole('switch', { name: 'Blocking enabled' })
   await toggle.click()

@@ -1,7 +1,6 @@
 import { ShieldCheck } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { addSite, removeSite, willFitInSyncQuota } from '@/core/blocklist'
-import type { Domain } from '@/core/domain'
 import { InvalidDomainError } from '@/core/domain'
 import { pickTip, type Tip } from '@/core/tips'
 import {
@@ -11,6 +10,7 @@ import {
 } from '@/platform/permissions'
 import type { Status } from '@/platform/storage'
 import {
+  getBlocklist,
   getStatus,
   moveToLocalStorage,
   onStoredStateChanged,
@@ -39,15 +39,27 @@ export function App() {
   const [confirmTip, setConfirmTip] = useState<Tip | null>(null)
   const [quotaFull, setQuotaFull] = useState(false)
 
+  // Refreshes race each other: they are fired by every storage and permission change,
+  // and resolve at the speed of their slowest IPC call. Without this guard a slow early
+  // refresh can land last and repaint stale state — including a switch that reads
+  // "blocking is on" when blocking is off, which no later event would correct.
+  const generation = useRef(0)
+
   const refresh = useCallback(() => {
-    void Promise.all([getStatus(), hasFullHostAccess(), isAllowedInIncognito()]).then(
-      ([next, access, incognitoAllowed]) => {
+    const mine = ++generation.current
+    void Promise.all([getStatus(), hasFullHostAccess(), isAllowedInIncognito()])
+      .then(([next, access, incognitoAllowed]) => {
+        if (mine !== generation.current) return
         setStatus(next)
         setHostAccess(access)
         setIncognito(incognitoAllowed)
         setLoaded(true)
-      },
-    )
+      })
+      .catch((error: unknown) => {
+        // Leaving `loaded` false would render a permanently empty, inert page.
+        console.error('[website-blocker] could not read settings', error)
+        setLoaded(true)
+      })
   }, [])
 
   // Storage is the single source of truth, so the UI re-reads it rather than keeping its
@@ -64,11 +76,21 @@ export function App() {
 
   const blocking = loaded && !status.paused
 
+  /**
+   * Mutations re-read the stored list instead of editing React state. Two options tabs,
+   * or a settings push from another device, would otherwise each write a list computed
+   * from their own stale snapshot and silently drop the other's entry.
+   *
+   * Nothing here writes optimistic state, and nothing calls refresh() on success: the
+   * storage change event repaints the UI, so what is on screen is always what is actually
+   * stored. Only failures refresh explicitly, because a failed write fires no event.
+   */
   const handleAdd = useCallback(
     async (input: string): Promise<string | null> => {
-      let next: Domain[]
+      const current = await getBlocklist()
+      let next: string[]
       try {
-        next = addSite(status.blocked, input)
+        next = addSite(current, input)
       } catch (error) {
         if (error instanceof InvalidDomainError)
           return `“${input.trim()}” is not a website address.`
@@ -83,39 +105,51 @@ export function App() {
       try {
         await setBlocklist(next)
       } catch (error) {
+        refresh()
         return error instanceof Error ? error.message : 'Could not save. Please try again.'
       }
-      setStatus((prev) => ({ ...prev, blocked: next }))
       return null
     },
-    [status.blocked, status.storeLocally],
+    [status.storeLocally, refresh],
   )
 
   const handleRemove = useCallback(
-    (domain: Domain) => {
-      const next = removeSite(status.blocked, domain)
-      setStatus((prev) => ({ ...prev, blocked: next }))
+    (domain: string) => {
       setQuotaFull(false)
-      void setBlocklist(next)
+      void (async () => {
+        try {
+          await setBlocklist(removeSite(await getBlocklist(), domain))
+        } catch (error) {
+          console.error('[website-blocker] could not remove site', error)
+          refresh()
+        }
+      })()
     },
-    [status.blocked],
+    [refresh],
   )
 
   // F2: turning blocking ON is immediate; turning it OFF opens the confirmation.
-  const handleToggle = useCallback((next: boolean) => {
-    if (next) {
-      void setPaused(false)
-      setStatus((prev) => ({ ...prev, paused: false }))
-    } else {
-      setConfirmTip(pickTip(Date.now()))
-    }
-  }, [])
+  const handleToggle = useCallback(
+    (next: boolean) => {
+      if (!next) {
+        setConfirmTip(pickTip(Date.now()))
+        return
+      }
+      void setPaused(false).catch((error: unknown) => {
+        console.error('[website-blocker] could not resume', error)
+        refresh()
+      })
+    },
+    [refresh],
+  )
 
   const confirmDisable = useCallback(() => {
     setConfirmTip(null)
-    setStatus((prev) => ({ ...prev, paused: true }))
-    void setPaused(true)
-  }, [])
+    void setPaused(true).catch((error: unknown) => {
+      console.error('[website-blocker] could not pause', error)
+      refresh()
+    })
+  }, [refresh])
 
   const subtitle = useMemo(() => {
     if (!loaded) return ' '
@@ -185,6 +219,10 @@ export function App() {
             onClick={() => {
               setQuotaFull(false)
               void moveToLocalStorage()
+                .catch((error: unknown) =>
+                  console.error('[website-blocker] could not switch to local storage', error),
+                )
+                .finally(refresh)
             }}
           >
             Keep my list on this device only

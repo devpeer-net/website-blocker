@@ -260,6 +260,8 @@ export const TIPS = [
  * tests can assert on it. Callers pass `Date.now()`.
  */
 export function pickTip(seed: number): Tip {
-  const index = Math.abs(Math.trunc(seed)) % TIPS.length
-  return TIPS[index] as Tip
+  const index = Number.isFinite(seed) ? Math.abs(Math.trunc(seed)) % TIPS.length : 0
+  // F3 requires a tip with every confirmation, so this must be total: never let an
+  // out-of-range index return undefined behind a cast.
+  return TIPS[index] ?? TIPS[0]
 }

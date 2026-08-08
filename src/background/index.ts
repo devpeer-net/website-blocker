@@ -8,7 +8,7 @@
  * The worker only *maintains* rules. Once written, declarativeNetRequest rules live in
  * the browser, so blocking keeps working while this worker is suspended.
  */
-import { onStoredStateChanged } from '@/platform/storage'
+import { onRuleInputChanged } from '@/platform/storage'
 import { syncRules } from '@/platform/sync'
 
 /** Fire-and-forget wrapper: a rejected promise here would be an invisible failure. */
@@ -23,7 +23,9 @@ chrome.runtime.onStartup.addListener(resync)
 
 // Storage is the only channel between the options page and the blocking engine, so this
 // one listener covers local edits, sync pushes from another device, and pause/resume.
-onStoredStateChanged(resync)
+// It watches the rule inputs only — syncRules() itself writes the diagnostic keys, so
+// watching those would make the worker retrigger itself.
+onRuleInputChanged(resync)
 
 // Regaining or losing host access changes which rules can apply; re-sync so the options
 // page's banner and the live rule set agree.

@@ -34,6 +34,13 @@ function hostFromFragment(fragment: string): string | null {
 }
 
 async function render(): Promise<void> {
+  // Read the fragment and strip it from the URL FIRST. Doing this at the end would leave
+  // the full blocked URL — query string, session tokens and all — in the omnibox and in
+  // history for the duration of the storage round trip, and permanently if anything
+  // before it threw.
+  const fragment = window.location.hash.slice(1)
+  window.history.replaceState(null, '', window.location.pathname)
+
   const hostEl = document.getElementById('host')
   const tipTextEl = document.getElementById('tip-text')
   const tipSourceSlot = document.getElementById('tip-source-slot')
@@ -51,7 +58,7 @@ async function render(): Promise<void> {
   citation.className = 'text-fg-muted underline underline-offset-2 hover:text-fg'
   tipSourceSlot.appendChild(citation)
 
-  const host = hostFromFragment(window.location.hash.slice(1))
+  const host = hostFromFragment(fragment)
   if (host) {
     // Defence in depth: only name a host we can confirm is on the user's own list.
     const candidate = normalizeDomain(host)
@@ -60,9 +67,8 @@ async function render(): Promise<void> {
       hostEl.textContent = candidate
     }
   }
-
-  // Stop the blocked URL sitting in the omnibox and in history.
-  window.history.replaceState(null, '', window.location.pathname)
 }
 
-void render()
+void render().catch((error: unknown) => {
+  console.error('[website-blocker] could not render the block page', error)
+})

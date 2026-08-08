@@ -14,7 +14,20 @@ export function blockedPageUrl(): string {
   return chrome.runtime.getURL('blocked.html')
 }
 
-export async function syncRules(): Promise<void> {
+/**
+ * Serializes runs. syncRules() is a read-modify-write over the dynamic rule set, and it
+ * is triggered from five listeners; two overlapping runs can each snapshot the rule ids
+ * before the other writes, leaving rules from the longer list orphaned and still blocking
+ * domains the user removed.
+ */
+let pending: Promise<void> = Promise.resolve()
+
+export function syncRules(): Promise<void> {
+  pending = pending.then(runSync, runSync)
+  return pending
+}
+
+async function runSync(): Promise<void> {
   const [stored, paused] = await Promise.all([getBlocklist(), getPaused()])
 
   // Partition BEFORE the API call. updateDynamicRules is atomic, so a single malformed

@@ -49,6 +49,30 @@ describe('addSite', () => {
   })
 })
 
+// The class of bug this closes: addSite stores a value that normalizeDomain would map to
+// something else, so removeSite (which normalizes its argument) can never match it. The
+// row renders with a ✕ that silently does nothing, and only a reinstall clears it.
+describe('every entry addSite stores can be removed again', () => {
+  const inputs = [
+    'reddit.com',
+    'reddit.com..',
+    'reddit.com...',
+    'WWW.Reddit.COM',
+    'www.www.example.com',
+    'https://WWW.Reddit.com./r/all?x=1',
+    '*.reddit.com',
+    '  news.ycombinator.com  ',
+    'http://[2606:4700::1111]/',
+  ]
+
+  it.each(inputs)('%j', (input) => {
+    const list = addSite([], input)
+    expect(list).toHaveLength(1)
+    // Removed by the exact string the UI renders, which is what the ✕ button passes.
+    expect(removeSite(list, list[0] as string)).toEqual([])
+  })
+})
+
 describe('removeSite', () => {
   it('removes an exact entry', () => {
     expect(removeSite(['reddit.com', 'x.com'], 'reddit.com')).toEqual(['x.com'])

@@ -12,7 +12,7 @@ describe('normalizeDomain', () => {
     ['https://user:pass@x.com/path#frag', 'x.com'],
     ['news.ycombinator.com', 'news.ycombinator.com'],
     ['bücher.example', 'xn--bcher-kva.example'],
-    ['WWW.WWW.example.com', 'www.example.com'], // exactly one `www.` is stripped
+    ['WWW.WWW.example.com', 'example.com'], // every leading `www.` is stripped
     ['1.2.3.4', '1.2.3.4'],
     ['http://[2606:4700::1111]/', '[2606:4700::1111]'], // IPv6 literal, already canonical
   ]
@@ -36,16 +36,37 @@ describe('normalizeDomain', () => {
     'reddit..com', // empty label
     'reddit.com-', // trailing hyphen is not a legal host
     '.reddit.com', // leading dot
+    '-.com', // label may not start with a hyphen
+    '--.com',
+    'a-.b.com', // inner label may not end with a hyphen
+    'www.-.com', // stripping "www." must not manufacture an illegal host
+    'http://[not:an:ipv6]/',
   ]
 
   it.each(rejected)('rejects %j', (input) => {
     expect(normalizeDomain(input)).toBeNull()
   })
 
-  it('is idempotent', () => {
-    const once = normalizeDomain('HTTPS://WWW.Reddit.com/r/all')
-    expect(once).not.toBeNull()
-    expect(normalizeDomain(once as string)).toBe(once)
+  // An entry that is not its own canonical form can never be matched for removal, so
+  // the UI would render a row whose ✕ button silently does nothing.
+  it('is idempotent for every accepted input', () => {
+    const probes = [
+      ...accepted.map(([input]) => input),
+      'reddit.com..', // used to canonicalise to "reddit.com.", which re-normalized differently
+      'reddit.com...',
+      'WWW.Reddit.COM..',
+      'https://www.reddit.com./',
+    ]
+    for (const probe of probes) {
+      const once = normalizeDomain(probe)
+      if (once === null) continue
+      expect(normalizeDomain(once), `${probe} -> ${once}`).toBe(once)
+    }
+  })
+
+  it('collapses any number of trailing dots', () => {
+    expect(normalizeDomain('reddit.com..')).toBe('reddit.com')
+    expect(normalizeDomain('reddit.com...')).toBe('reddit.com')
   })
 
   it('only ever returns lowercase ASCII, which declarativeNetRequest requires', () => {
