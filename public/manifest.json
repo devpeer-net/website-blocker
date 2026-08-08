@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Website Blocker",
+  "name": "Website Blocker - Block Distracting Sites, Private & Simple",
   "version": "1.0.0",
-  "description": "Block distracting websites. No tracking, no network calls, no accounts.",
+  "description": "Block distracting websites and doomscrolling—simply and privately. No account, no tracking, just calm, science-backed nudges.",
   "minimum_chrome_version": "121",
 
   "icons": {
