@@ -1,5 +1,9 @@
 # Website Blocker
 
+[![CI](https://github.com/devpeer-net/website-blocker/actions/workflows/ci.yml/badge.svg)](https://github.com/devpeer-net/website-blocker/actions/workflows/ci.yml)
+[![Release](https://github.com/devpeer-net/website-blocker/actions/workflows/release.yml/badge.svg)](https://github.com/devpeer-net/website-blocker/actions/workflows/release.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A Chrome extension that blocks the websites you decide are pure distraction — and makes
 turning it off a deliberate act rather than a reflex.
 
@@ -15,15 +19,17 @@ switching blocking off — and keeps everything else frictionless.
 
 ## Install
 
-Not yet on the Chrome Web Store. To run it from source:
+Not yet on the Chrome Web Store. Take the zip from the
+[latest release](https://github.com/devpeer-net/website-blocker/releases/latest) — or build
+it yourself:
 
 ```bash
 pnpm install
 pnpm build
 ```
 
-Then open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked**, and
-select the `dist/` folder.
+Either way, open `chrome://extensions`, turn on **Developer mode**, choose **Load
+unpacked**, and select the `dist/` folder (or the unzipped release).
 
 Two settings are worth changing right after installing:
 
@@ -84,6 +90,26 @@ URL parser, accepts only `http(s)`, checks the host against your actual blocklis
 naming it, and writes through `textContent` exclusively. No `innerHTML`, and no link is
 ever built from the fragment.
 
+## Releases
+
+Every version is built by [a workflow you can read](.github/workflows/release.yml), never
+uploaded from a laptop. Pushing a tag runs the full test suite, packages the zip
+deterministically, and asks GitHub to sign a statement binding that exact file to that
+exact commit. The zip attached to the release is the same file that goes to the Web Store,
+and you can prove it:
+
+```bash
+gh release download v1.0.0 --repo devpeer-net/website-blocker
+sha256sum -c website-blocker-1.0.0.zip.sha256
+gh attestation verify website-blocker-1.0.0.zip --repo devpeer-net/website-blocker
+```
+
+The last command trusts nothing in this repository — not the release page, not the
+checksum. Publishing to the Chrome Web Store is a separate, human-approved step, and every
+approval is recorded in the repository's deployment history.
+
+[docs/RELEASING.md](docs/RELEASING.md) has the details, including how to cut one.
+
 ## Development
 
 ```bash
@@ -92,7 +118,7 @@ pnpm lint         # Biome + tsc --noEmit
 pnpm test:unit    # Vitest over src/core (pure, no browser, no mocks)
 pnpm test:e2e     # Playwright, headless, real Chromium with the extension loaded
 pnpm test         # both
-pnpm package      # dist/ -> website-blocker.zip for the Web Store
+pnpm package      # dist/ -> a deterministic website-blocker-<version>.zip + .sha256
 ```
 
 The E2E suite never touches the real internet: it runs a local HTTP server and points

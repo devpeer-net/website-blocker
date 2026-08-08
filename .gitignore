@@ -4,4 +4,5 @@ coverage/
 playwright-report/
 test-results/
 *.zip
+*.zip.sha256
 .DS_Store

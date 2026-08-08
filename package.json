@@ -17,7 +17,9 @@
     "test:e2e:headed": "pnpm build:e2e && HEADED=1 playwright test",
     "test:e2e:xvfb": "pnpm build:e2e && xvfb-run -a --server-args=\"-screen 0 1280x800x24\" env HEADED=1 playwright test",
     "test": "pnpm test:unit && pnpm test:e2e",
-    "package": "pnpm build && cd dist && zip -qr ../website-blocker.zip ."
+    "package": "pnpm build && node scripts/package.mjs",
+    "check:version": "node scripts/check-version.mjs",
+    "release:bump": "node scripts/bump-version.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",

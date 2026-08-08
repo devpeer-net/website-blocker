@@ -1,0 +1,214 @@
+name: Release
+
+# Cutting a release is one act: push a tag. Everything after it happens in public and
+# leaves a record on the repository — the verification run, the artifact and its digest, a
+# signed statement of what built it, and a deployment that waits for a human to approve it.
+#
+# Nothing here is uploaded from a laptop. See docs/RELEASING.md.
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false # never abandon a release half-published
+
+jobs:
+  # The same lint / unit / end-to-end suite that guards main, run against the tagged commit.
+  verify:
+    uses: ./.github/workflows/ci.yml
+
+  package:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # mint the short-lived Sigstore signing certificate
+      attestations: write # record the provenance statement against the repository
+    outputs:
+      version: ${{ steps.package.outputs.version }}
+      zip: ${{ steps.package.outputs.zip }}
+      sha256: ${{ steps.package.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # The tag is the release's identity. Refuse to build if it disagrees with the version
+      # the extension will report once installed, or if the changelog has nothing to say.
+      - run: node scripts/check-version.mjs "${{ github.ref_name }}"
+
+      - run: pnpm build
+      - id: package
+        run: node scripts/package.mjs
+
+      # Binds this exact zip to this commit, this workflow file and this run, signed by
+      # GitHub's Sigstore instance. Anyone can check it with `gh attestation verify`.
+      - uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: ${{ steps.package.outputs.zip }}
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: extension-package
+          path: |
+            ${{ steps.package.outputs.zip }}
+            ${{ steps.package.outputs.zip }}.sha256
+          if-no-files-found: error
+
+  # Publish the release before the store gate, on purpose: the artifact and its digest are
+  # public and inspectable *before* anyone decides whether to push it to users.
+  release:
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v8
+        with:
+          name: extension-package
+
+      # `gh` ships on the runner. Using it instead of a third-party action means no
+      # unaudited code holds a token with write access to this repository.
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.package.outputs.version }}
+          ZIP: ${{ needs.package.outputs.zip }}
+          SHA256: ${{ needs.package.outputs.sha256 }}
+        run: |
+          node scripts/release-notes.mjs "$VERSION" "$ZIP" "$SHA256" > notes.md
+          gh release create "$GITHUB_REF_NAME" \
+            --title "v$VERSION" \
+            --notes-file notes.md \
+            --verify-tag \
+            "$ZIP" "$ZIP.sha256"
+
+  publish-chrome-web-store:
+    needs: [package, release]
+    runs-on: ubuntu-latest
+    # The gate. This job does not start until a required reviewer approves the deployment
+    # in the Actions UI. Who approved, and when, is recorded on the repository's
+    # Environments page — the approval is part of the public record, not a private act.
+    environment:
+      name: chrome-web-store
+      url: https://chromewebstore.google.com/detail/${{ vars.CWS_EXTENSION_ID }}
+    permissions:
+      contents: read
+    env:
+      ZIP: ${{ needs.package.outputs.zip }}
+      EXTENSION_ID: ${{ vars.CWS_EXTENSION_ID }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: extension-package
+
+      - name: Check the credentials are configured
+        env:
+          CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+        run: |
+          missing=()
+          [ -n "$EXTENSION_ID" ] || missing+=("variable CWS_EXTENSION_ID")
+          [ -n "$CLIENT_ID" ] || missing+=("secret CWS_CLIENT_ID")
+          [ -n "$CLIENT_SECRET" ] || missing+=("secret CWS_CLIENT_SECRET")
+          [ -n "$REFRESH_TOKEN" ] || missing+=("secret CWS_REFRESH_TOKEN")
+          if [ ${#missing[@]} -gt 0 ]; then
+            printf '::error::Not configured: %s. See docs/RELEASING.md.\n' "${missing[*]}"
+            exit 1
+          fi
+
+      # Prove the bytes about to reach the store are the bytes that were attested, and not
+      # something that changed in transit through the artifact store.
+      - name: Re-check the digest
+        run: sha256sum -c "$ZIP.sha256"
+
+      - name: Get an access token
+        id: token
+        env:
+          CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+        run: |
+          # `if ! response=$(...)` rather than a bare assignment: under `set -e` a failing
+          # curl would abort the step before the error body could be printed.
+          if ! response=$(curl -sS --fail-with-body -X POST https://oauth2.googleapis.com/token \
+            --data-urlencode "client_id=$CLIENT_ID" \
+            --data-urlencode "client_secret=$CLIENT_SECRET" \
+            --data-urlencode "refresh_token=$REFRESH_TOKEN" \
+            --data-urlencode 'grant_type=refresh_token'); then
+            printf '::error::Token exchange failed: %s\n' "$response"
+            echo 'Note: a refresh token minted while the OAuth consent screen is in Testing'
+            echo 'expires after seven days. See docs/RELEASING.md.'
+            exit 1
+          fi
+          token=$(jq -r '.access_token // empty' <<<"$response")
+          if [ -z "$token" ]; then
+            echo '::error::Token exchange returned no access_token'
+            exit 1
+          fi
+          echo "::add-mask::$token"
+          echo "token=$token" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the package
+        env:
+          TOKEN: ${{ steps.token.outputs.token }}
+        run: |
+          if ! response=$(curl -sS --fail-with-body -X PUT \
+            -H "Authorization: Bearer $TOKEN" \
+            -H 'x-goog-api-version: 2' \
+            -T "$ZIP" \
+            "https://www.googleapis.com/upload/chromewebstore/v1.1/items/$EXTENSION_ID"); then
+            printf '::error::Upload request failed: %s\n' "$response"
+            exit 1
+          fi
+          echo "$response"
+          if [ "$(jq -r '.uploadState // "UNKNOWN"' <<<"$response")" != "SUCCESS" ]; then
+            jq -r '.itemError[]? | "::error::\(.error_code): \(.error_detail)"' <<<"$response"
+            echo '::error::Upload did not reach state SUCCESS'
+            exit 1
+          fi
+
+      - name: Submit for publication
+        env:
+          TOKEN: ${{ steps.token.outputs.token }}
+          VERSION: ${{ needs.package.outputs.version }}
+        run: |
+          if ! response=$(curl -sS --fail-with-body -X POST \
+            -H "Authorization: Bearer $TOKEN" \
+            -H 'x-goog-api-version: 2' \
+            -H 'Content-Length: 0' \
+            "https://www.googleapis.com/chromewebstore/v1.1/items/$EXTENSION_ID/publish"); then
+            printf '::error::Publish request failed: %s\n' "$response"
+            exit 1
+          fi
+          echo "$response"
+          if ! jq -e '(.status // []) | any(. == "OK" or . == "ITEM_PENDING_REVIEW")' \
+            <<<"$response" > /dev/null; then
+            jq -r '.statusDetail[]? | "::error::\(.)"' <<<"$response"
+            printf '::error::Chrome Web Store rejected the submission: %s\n' \
+              "$(jq -r '(.status // ["no status"]) | join(", ")' <<<"$response")"
+            exit 1
+          fi
+          {
+            echo "### v$VERSION submitted to the Chrome Web Store"
+            echo
+            echo "Status: \`$(jq -r '.status | join(", ")' <<<"$response")\`"
+            jq -r '.statusDetail[]? | "- \(.)"' <<<"$response"
+            echo
+            echo 'Google reviews the submission before it reaches users.'
+          } >> "$GITHUB_STEP_SUMMARY"
