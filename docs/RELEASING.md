@@ -113,17 +113,38 @@ curl -sS -X POST https://oauth2.googleapis.com/token \
 > tokens after seven days and the publish job starts failing for no visible reason. Set the
 > consent screen to *In production* before minting the token you intend to keep.
 
-**5. Store them** — Settings → Environments → `chrome-web-store`:
+**5. Store them.** Tier by sensitivity, not for uniformity:
 
-| Kind | Name | Value |
-|---|---|---|
-| Variable | `CWS_EXTENSION_ID` | the 32-character item ID (public — a variable, not a secret, so it shows in logs) |
-| Secret | `CWS_CLIENT_ID` | OAuth client ID |
-| Secret | `CWS_CLIENT_SECRET` | OAuth client secret |
-| Secret | `CWS_REFRESH_TOKEN` | the refresh token from step 4 |
+| Kind | Where | Name | Value |
+|---|---|---|---|
+| Secret | Environment `chrome-web-store` | `CWS_CLIENT_ID` | OAuth client ID |
+| Secret | Environment `chrome-web-store` | `CWS_CLIENT_SECRET` | OAuth client secret |
+| Secret | Environment `chrome-web-store` | `CWS_REFRESH_TOKEN` | the refresh token from step 4 |
+| Variable | Repository | `CWS_EXTENSION_ID` | the 32-character item ID |
 
-Scoping them to the environment rather than the repository means they are unreachable
-except from a job that has already passed the approval gate.
+```bash
+gh secret set CWS_CLIENT_ID     --env chrome-web-store --repo devpeer-net/website-blocker
+gh secret set CWS_CLIENT_SECRET --env chrome-web-store --repo devpeer-net/website-blocker
+gh secret set CWS_REFRESH_TOKEN --env chrome-web-store --repo devpeer-net/website-blocker
+gh variable set CWS_EXTENSION_ID --repo devpeer-net/website-blocker
+```
+
+Environment scope is what turns the approval gate into access control rather than a pause
+in the UI. A repository secret is readable by any job in any workflow on any branch;
+anyone with write access could push a branch whose workflow prints it. An environment
+secret is injected only into a job that declares `environment: chrome-web-store`, and that
+job cannot start until a required reviewer approves it — and the environment's deployment
+policy admits only `v*` tags, so a branch cannot reach the credentials at all.
+
+Organization scope would be wrong twice over: these keys publish one specific extension,
+so sharing them across `devpeer-net` widens the blast radius for no benefit, and
+organization secrets cannot be environment-scoped, which is precisely the protection worth
+having.
+
+The extension ID is deliberately the odd one out. It is public the moment the listing
+exists, and it is a repository *variable* so it stays unmasked in logs and resolves in the
+job's `environment.url` — an environment-scoped value would be a chicken-and-egg for the
+very deployment that defines it.
 
 ## Why it is built this way
 
