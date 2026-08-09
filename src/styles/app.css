@@ -1,4 +1,13 @@
-@import 'tailwindcss';
+/* `source(none)` turns off Tailwind's automatic content detection, which scans the whole
+   project except what git ignores. That made the shipped stylesheet depend on files that
+   are not part of the extension — a scratch directory alongside src/ silently added
+   utilities to what users download, and a local build stopped matching CI's. The build
+   inputs are options.html, blocked.html and src/, so say exactly that. */
+@import 'tailwindcss' source(none);
+@source '../../src';
+@source '../../options.html';
+@source '../../blocked.html';
+
 @import './tokens.css';
 
 @import './fonts.css';
