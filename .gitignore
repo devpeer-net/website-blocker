@@ -11,6 +11,7 @@ test-results/
 # and a refresh token locally; this is the cheap guard against one landing in a commit.
 .env
 .env.*
+!.env.example
 *.pem
 *.key
 *.p12

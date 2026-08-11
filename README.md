@@ -108,29 +108,32 @@ The last command trusts nothing in this repository — not the release page, not
 checksum. Publishing to the Chrome Web Store is a separate, human-approved step, and every
 approval is recorded in the repository's deployment history.
 
-### Checking what the Web Store actually installed
+### Checking what the Web Store is serving
 
-The digest above identifies the upload. It cannot identify the install, and no project can
-make it: Google unpacks every upload, repacks it as a CRX signed with its own key, and adds
-a `_metadata/` directory. Those bytes differ by construction. Anyone inviting you to
-compare the two digests directly is describing a check that has never once passed.
+The digest above identifies the upload, and nothing on your disk can be compared against
+it. Google unpacks every upload and repacks it as a CRX signed with its own key, and Chrome
+then rewrites files as it installs them — it re-serialises `manifest.json` and injects a
+`key`, and re-encodes every icon through its own PNG encoder. Comparing a release zip to
+the installed files reports tampering on a completely honest install. It is an appealing
+check and it does not work.
 
-What survives the repack is the payload. Every release therefore also publishes a **tree
-digest** — the files hashed individually, then the listing hashed — which you can
-regenerate from your own Chrome profile:
+Google does leave something usable behind. Beside every Web Store install, Chrome stores
+`_metadata/verified_contents.json` — Google's **signed record of the hash of each file as
+uploaded**, before any of that rewriting. Every release publishes a content digest over the
+same hashes, so the two can be compared:
 
 ```bash
-cd ~/.config/google-chrome/Default/Extensions/<extension-id>/<version>_0
-find . -type f -not -path './_metadata/*' -printf '%P\n' \
-  | LC_ALL=C sort | xargs -d '\n' sha256sum | sha256sum
+node scripts/verify-install.mjs --zip website-blocker-1.0.0.zip --installed <extension-dir>
 ```
 
-That is deliberately plain coreutils — the check worth having is the one that runs none of
-my code. If it matches the tree digest on the release page, the extension Chrome is running
-is this build, file for file. There is also
-[`scripts/verify-install.mjs`](scripts/verify-install.mjs), which does the same comparison
-and names any file that differs. [docs/RELEASING.md](docs/RELEASING.md) has the
-per-platform profile paths and how to cut a release.
+If the digests agree, the package Google received and signed is this release, file for
+file. If they do not, it names each file that differs.
+
+What this proves is worth stating precisely: that **the package the store is serving was
+built from this release**. It trusts `verified_contents.json` as Chrome wrote it — the
+signature over it is Google's and is not checked here, though Chrome refuses to run an
+extension whose files disagree with it. [docs/RELEASING.md](docs/RELEASING.md) has the
+per-platform paths and how to cut a release.
 
 ## Development
 

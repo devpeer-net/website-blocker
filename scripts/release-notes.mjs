@@ -2,7 +2,7 @@
  * Compose the body of a GitHub Release: what changed, followed by everything a reader
  * needs to check the artifact without taking the release page's word for anything.
  *
- *   node scripts/release-notes.mjs <version> <zip-name> <sha256> > notes.md
+ *   node scripts/release-notes.mjs <version> <zip-name> <sha256> <content-digest> > notes.md
  *
  * Run inside Actions it picks the repository, commit and run URL out of the environment.
  */
@@ -10,10 +10,10 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const [version, zipName, sha256, tree] = process.argv.slice(2)
+const [version, zipName, sha256, content] = process.argv.slice(2)
 
-if (!version || !zipName || !sha256 || !tree) {
-  console.error('usage: node scripts/release-notes.mjs <version> <zip-name> <sha256> <tree>')
+if (!version || !zipName || !sha256 || !content) {
+  console.error('usage: node scripts/release-notes.mjs <version> <zip-name> <sha256> <content>')
   process.exit(1)
 }
 
@@ -74,27 +74,30 @@ const lines = [
   `gh attestation verify ${zipName} --repo ${repo}`,
   '```',
   '',
-  '### Verify what the Web Store installed',
+  '### Verify what the Web Store is serving',
   '',
-  'The digest above identifies the *upload*. It cannot identify the *install*: Google',
-  'repacks every upload into a CRX signed with its own key and adds a `_metadata/`',
-  'directory, so those bytes differ by construction. What survives the repack is the',
-  'payload, and this is its digest:',
+  'The digest above identifies the *upload*, and nothing on your disk can be compared',
+  'against it. Google repacks the zip into a CRX signed with its own key, and Chrome then',
+  'rewrites `manifest.json` and re-encodes every image as it installs them — so comparing',
+  'this release to the installed files reports tampering on a perfectly honest install.',
+  '',
+  'Google does leave something usable behind. `_metadata/verified_contents.json`, stored',
+  'beside every Web Store install, is its **signed record of each file as uploaded**,',
+  "before any of that rewriting. Hashing that record gives this release's content digest:",
   '',
   '```',
-  `${tree}  tree`,
+  content,
   '```',
   '',
-  'Regenerate it from your own profile — if it matches, the Web Store is serving this',
-  'exact build. Point at the versioned directory Chrome unpacked the extension into:',
+  'From a clone of this repository at this tag:',
   '',
   '```bash',
-  "find . -type f -not -path './_metadata/*' -printf '%P\\n' \\",
-  "  | LC_ALL=C sort | xargs -d '\\n' sha256sum | sha256sum",
+  `node scripts/verify-install.mjs --zip ${zipName} --installed <extension-dir>`,
   '```',
   '',
-  `Or \`node scripts/verify-install.mjs --zip ${zipName} --installed <dir>\`, which names`,
-  'any file that differs. `docs/RELEASING.md` has the per-platform paths.',
+  'It prints both digests and names any file that differs. `docs/RELEASING.md` has the',
+  'per-platform paths to `<extension-dir>`, and is explicit about what this does and does',
+  'not prove.',
 ]
 
 if (trail) lines.push('', trail)
