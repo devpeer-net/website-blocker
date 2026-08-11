@@ -41,19 +41,18 @@ the canvas, which is 13px after the downscale. That is why the UI is enlarged
 | 5 | Nothing ever leaves your browser | Privacy posture — the one thing no screen can show |
 
 Tokens (colours, type scale, gutter, caption position) live in one file,
-`sources/frames/frame.css`, and every frame and both tiles use it, so the set
+`store/frames/frame.css`, and every frame and both tiles use it, so the set
 reads as one product. The palette is the extension's own: `#3a47d1` primary,
 `#3fd9c0` accent, `#0a0f1c`-family ground. Type is the extension's own bundled
 Inter Variable, loaded from `dist/assets/`, not a system fallback.
 
-## Decisions I made without asking
+## Decisions behind the set
 
-The brief said to work autonomously, so these were called rather than checked:
+Recorded because each one is a trade someone may want to revisit:
 
-- **Strongest selling point → frame 1 is the block page.** `STORE_LISTING.md`
-  §7 already sketched five shots and this follows it closely; the audit calls
-  cited, peer-reviewed science at the block moment your moat, so it appears in
-  frames 1 and 3.
+- **Strongest selling point → frame 1 is the block page.** Cited, peer-reviewed
+  science shown at the block moment is the thing no competitor in this category
+  claims, so it appears in frames 1 and 3.
 - **Captions are eyebrow + headline only, no supporting line.** The dialog and
   the blocklist are tall; a third line of copy would have forced the UI below
   the legibility floor. Less text is also what the store's own guidance asks
@@ -68,7 +67,7 @@ The brief said to work autonomously, so these were called rather than checked:
   looked friendlier and been false.
 - **A new 128×128 icon, same mark.** The shipped `dist/icons/128.png` is a
   3-colour, 1-bit-alpha bitmap with hard aliased edges, and its artwork is not
-  vertically centred. `sources/frames/icon-128.html` redraws the same indigo
+  vertically centred. `store/frames/icon-128.html` redraws the same indigo
   shield and white check from the lucide `shield-check` geometry the options
   header already uses, at the same `#3a47d1`, properly antialiased and centred.
   Consider replacing the in-extension icons from the same source.
@@ -78,10 +77,12 @@ The brief said to work autonomously, so these were called rather than checked:
 
 ## Limitations and things to check before you submit
 
-1. **"Open source, MIT" on frame 5 must be true at submission time.**
-   `STORE_LISTING.md` §8 still lists "publish the public repo" as an open task.
-   Imagery implying something the extension does not provide is a policy
-   violation, so either publish the repo first or drop that third panel.
+1. ~~**"Open source, MIT" on frame 5 must be true at submission time.**~~
+   Resolved on 2026-08-09: this repository is public and MIT-licensed, so the
+   claim on frame 5 holds. It is listed here because it is the kind of thing that
+   silently becomes false again — imagery implying something the extension does
+   not provide is a policy violation, so if the repository ever goes private,
+   that panel goes with it.
 2. **The Incognito advisory is not in the screenshots.** A freshly launched
    capture profile has incognito access off, so the options page renders its
    "Blocking does not apply in Incognito windows" warning. That is a property of
@@ -101,28 +102,36 @@ The brief said to work autonomously, so these were called rather than checked:
 5. **Frames 2 and 4 both show the blocklist**, at different crops and zooms.
    Deliberate — frame 2 is the page, frame 4 is the detail — but if you want
    more variety, frame 4 could become the block page for `old.reddit.com`
-   instead; that capture is already in `sources/captures/`.
+   instead; that capture is already in `store/captures/`.
 6. **File sizes** are 78 KB–443 KB. Well under anything worth optimising, but
    `oxipng -o4` would shave ~20% if you care.
 
 ## Regenerating
 
-Out-of-date screenshots are an explicit policy violation, so the whole set is
-reproducible:
+Out-of-date screenshots are an explicit policy violation, so the inputs are all
+committed and the set is derived rather than hand-made: the captures come from
+`dist/`, the frames are HTML, and the only drawn pixels are the shield in
+`frames/icon-128.html`.
 
 ```bash
-./store/make-store-assets.sh                 # -> store/build, then verifies
-./store/make-store-assets.sh /path/to/out    # or somewhere else
+pnpm store:assets                 # -> store/build, then verifies
+pnpm store:assets /path/to/out    # or somewhere else
 ```
 
-It needs `playwright` (already in `node_modules`) and ImageMagick, and reads the
-skill's scripts from `$CWS_SKILL` (default
-`~/.claude/skills/chrome-webstore-screenshots`). Worth wiring into `package.json`
-as a `store:assets` script next to `package`, and worth committing
-`store/frames/`, `store/demo/` and `store/render_icon.mjs` — the sources are what
-make the next release cheap.
+**One dependency is not in this repository.** The capture, render and verify
+scripts are a local authoring tool, read from `$CWS_SKILL` (default
+`~/.claude/skills/chrome-webstore-screenshots`) and not redistributed here, so
+`pnpm store:assets` will not run for a fresh clone — it fails with a preflight
+message saying exactly what is missing rather than part-way through. Also needs
+`playwright` (already in `node_modules`) and ImageMagick.
 
-## What's in `sources/`
+That is a real limitation, so it is worth being plain about what it does and does
+not block: the eight PNGs in `build/` are committed and are the actual
+deliverable, and nothing about building, testing or releasing the extension
+touches this script. Regenerating by hand is also tractable — the frames are
+plain HTML rendered at the sizes in `frames/manifest.json`.
+
+## What's in `store/`
 
 | Path | |
 |---|---|

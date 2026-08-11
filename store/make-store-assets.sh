@@ -10,15 +10,50 @@
 #   ./store/make-store-assets.sh            # -> store/build
 #   ./store/make-store-assets.sh /some/dir  # -> /some/dir
 #
-# Requires: playwright (in node_modules), ImageMagick.
+# Requires: playwright (in node_modules), ImageMagick, and three capture/render scripts
+# that are NOT part of this repository — see the preflight check below.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT="${1:-$ROOT/store/build}"
+
+# The generator is a local authoring tool, not a vendored dependency. Its three scripts
+# live outside this repository and are not redistributed here, so this script runs for
+# whoever has them and fails clearly for everyone else rather than part-way through with a
+# node stack trace. The committed PNGs in store/build/ are the actual deliverable; nobody
+# needs to run this to build, test or release the extension.
 SKILL="${CWS_SKILL:-$HOME/.claude/skills/chrome-webstore-screenshots}"
 CAP="$SKILL/scripts/capture_ui.mjs"
 RENDER="$SKILL/scripts/render.mjs"
 VERIFY="$SKILL/scripts/verify_assets.mjs"
+
+missing=()
+for script in "$CAP" "$RENDER" "$VERIFY"; do
+  [ -f "$script" ] || missing+=("$script")
+done
+if [ ${#missing[@]} -gt 0 ]; then
+  cat >&2 <<EOF
+make-store-assets: the asset generator is not available here.
+
+Missing:
+$(printf '  %s\n' "${missing[@]}")
+
+These are not part of this repository. Set CWS_SKILL to the directory containing
+scripts/{capture_ui,render,verify_assets}.mjs, or regenerate the set by hand — the
+frames in store/frames/ are plain HTML and render at the sizes in
+store/frames/manifest.json.
+
+The eight PNGs in store/build/ are committed, so nothing about building, testing or
+releasing the extension depends on this script.
+EOF
+  exit 1
+fi
+
+command -v node > /dev/null || { echo 'make-store-assets: node is not installed' >&2; exit 1; }
+command -v magick > /dev/null || command -v convert > /dev/null || {
+  echo 'make-store-assets: ImageMagick is not installed (need `magick` or `convert`)' >&2
+  exit 1
+}
 
 cd "$ROOT"
 # Rebuild first, always. Capturing a stale dist/ is how a listing ends up showing
