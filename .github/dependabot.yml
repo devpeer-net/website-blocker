@@ -9,16 +9,26 @@ updates:
     schedule:
       interval: weekly
     groups:
-      # One PR for the routine bumps. A compromised action is not a per-action decision to
-      # make on a Monday morning; a single reviewable diff is more likely to be read.
+      # One PR for the routine bumps — a compromised action is not a per-action decision to
+      # make on a Monday morning, and a single reviewable diff is more likely to be read.
+      #
+      # `update-types` is required, not decoration: a group with only `patterns` takes every
+      # semver bump, so a major would land in the same PR as the patches. One breaking input
+      # change would then redden CI and block the security fixes the file exists to deliver.
       actions:
         patterns: ['*']
+        update-types: [minor, patch]
 
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    # Grouped PRs count against this too. Two groups plus the majors that arrive on their
+    # own need headroom, or the later ones are silently never proposed.
+    open-pull-requests-limit: 10
+    # Majors are deliberately left ungrouped so each lands as its own PR: React, Tailwind
+    # and Vite majors have all shipped breaking changes that the suite would catch but a
+    # grouped diff would bury.
     groups:
       dev-dependencies:
         dependency-type: development
@@ -26,5 +36,3 @@ updates:
       production-minor-patch:
         dependency-type: production
         update-types: [minor, patch]
-    # Majors land as their own PR: React, Tailwind and Vite majors have all shipped
-    # breaking changes that the test suite would catch but a grouped diff would bury.
