@@ -7,8 +7,9 @@
  * skill's render.mjs screenshots without `omitBackground`, so every pixel it
  * produces is opaque. That is exactly right for the five screenshots — the
  * store wants them flattened and full bleed — and exactly wrong for the store
- * icon, which is specified as 96x96 of artwork inside a 128x128 canvas with
- * 16px of *transparent* padding on each side.
+ * icon, which is specified as artwork inside a 96x96 box centred in a
+ * 128x128 canvas, the remainder *transparent*. The shield is taller than it is wide, so
+ * it measures 78x96: 16px of padding top and bottom, 25px left and right.
  *
  * Everything else matches render.mjs: supersample at 4x, resample once with
  * Lanczos, then assert the file really is 128x128 before anyone uploads it.
@@ -70,20 +71,42 @@ await page.goto(pathToFileURL(src).href, { waitUntil: 'load' })
 const buf = await page.locator('.icon').screenshot({ type: 'png', omitBackground: true })
 await browser.close()
 
+/**
+ * ImageMagick 7 ships a single `magick` binary and only installs the v6 `convert` and
+ * `identify` shims when asked. Calling `convert` unconditionally means an IM7-only machine
+ * runs the whole capture and render pipeline, then dies at the last step with ENOENT and a
+ * message blaming the resize.
+ */
+const im = ['magick', 'convert'].find((bin) => spawnSync(bin, ['-version']).status === 0)
+if (!im) {
+  console.error('render_icon: ImageMagick not found (need `magick` or `convert`)')
+  process.exit(1)
+}
+/** IM7 is `magick <args>` and `magick identify <args>`; IM6 is `convert` and `identify`. */
+const convert = (args) => spawnSync(im, args, { stdio: 'inherit' })
+const identify = (args) =>
+  im === 'magick'
+    ? spawnSync('magick', ['identify', ...args], { encoding: 'utf8' })
+    : spawnSync('identify', args, { encoding: 'utf8' })
+
 const tmp = path.join(os.tmpdir(), `cws-icon-${process.pid}.png`)
 fs.writeFileSync(tmp, buf)
-const r = spawnSync(
-  'convert',
-  [tmp, '-filter', 'Lanczos', '-resize', `${SIZE}x${SIZE}!`, '-strip', 'PNG32:' + out],
-  { stdio: 'inherit' },
-)
+const r = convert([
+  tmp,
+  '-filter',
+  'Lanczos',
+  '-resize',
+  `${SIZE}x${SIZE}!`,
+  '-strip',
+  `PNG32:${out}`,
+])
 fs.rmSync(tmp, { force: true })
 if (r.status !== 0) {
   console.error('render_icon: ImageMagick resize failed')
   process.exit(1)
 }
 
-const probe = spawnSync('identify', ['-format', '%wx%h %[channels]', out], { encoding: 'utf8' })
+const probe = identify(['-format', '%wx%h %[channels]', out])
 const [dims, channels] = probe.stdout.trim().split(' ')
 if (dims !== `${SIZE}x${SIZE}`) {
   console.error(`render_icon: ${out} came out ${dims}, expected ${SIZE}x${SIZE}`)

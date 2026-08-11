@@ -8,7 +8,7 @@
   /* Frame 4 — depth. The blocklist as shipped (the page's own <section>), with
      one callout for the behaviour the list implies but does not print: an entry
      matches the domain and everything under it. That is a real code path —
-     matchesDomain() accepts `host === entry || host.endsWith('.' + entry)` —
+     covers() accepts `host === entry || host.endsWith('.' + entry)` —
      and the block page in frame 1 is produced by it.
 
      Same 1.9x as frame 2, so the two frames sit at the same type size. */

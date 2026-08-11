@@ -11,6 +11,12 @@ full semver, because Chrome rejects pre-release suffixes such as `1.1.0-rc.1`.
 
 ## [Unreleased]
 
+### Changed
+
+- The extension name and store summary are the final listing copy:
+  `Website Blocker - Block Distracting Sites, Private & Simple`. The toolbar tooltip stays
+  plain `Website Blocker`.
+
 ## [1.0.0] — 2026-08-08
 
 First release.

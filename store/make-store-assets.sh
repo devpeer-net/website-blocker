@@ -9,13 +9,14 @@
 #
 #   ./store/make-store-assets.sh            # -> store/build
 #   ./store/make-store-assets.sh /some/dir  # -> /some/dir
+#   SKIP_BUILD=1 ./store/make-store-assets.sh   # reuse the existing dist/ (frame work only)
 #
 # Requires: playwright (in node_modules), ImageMagick, and three capture/render scripts
 # that are NOT part of this repository — see the preflight check below.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-OUT="${1:-$ROOT/store/build}"
+OUT_ARG="${1:-$ROOT/store/build}"
 
 # The generator is a local authoring tool, not a vendored dependency. Its three scripts
 # live outside this repository and are not redistributed here, so this script runs for
@@ -63,7 +64,11 @@ cd "$ROOT"
 if [ "${SKIP_BUILD:-0}" != "1" ]; then
   pnpm build
 fi
-mkdir -p "$OUT" store/captures
+# Resolve OUT before comparing it to the default: a plain string compare treats
+# "store/build", "./store/build" and a trailing slash as different directories, and the
+# copy below then runs `cp x/*.png x/` and aborts the run under set -e.
+mkdir -p "$OUT_ARG" store/captures
+OUT="$(cd "$OUT_ARG" && pwd)"
 
 echo "── capturing the real UI from dist/ ─────────────────────────────────"
 # Element captures, not whole pages: the frames compose them at 1.9x with the
@@ -97,10 +102,14 @@ done
 
 echo "── rendering the canvases ───────────────────────────────────────────"
 node "$RENDER" --batch store/frames/manifest.json
-node store/render_icon.mjs "$OUT/store-icon-128.png"
+# render.mjs --batch writes the seven canvases into store/build; the icon needs its own pass
+# for transparency. Both land in store/build first, and only then is the set mirrored --
+# rendering into $OUT before the copy let `cp store/build/*.png` overwrite the fresh icon
+# with the stale committed one, silently shipping last release's artwork.
+node store/render_icon.mjs "$ROOT/store/build/store-icon-128.png"
 
 if [ "$OUT" != "$ROOT/store/build" ]; then
-  cp store/build/*.png "$OUT/"
+  cp "$ROOT"/store/build/*.png "$OUT/"
 fi
 
 echo "── verifying against the store specs ────────────────────────────────"

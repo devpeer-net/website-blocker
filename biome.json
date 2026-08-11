@@ -10,7 +10,9 @@
       "!test-results",
       "!docs/research-brief.md",
       "!src/styles/app.css",
-      "!store"
+      "!store/frames",
+      "!store/build",
+      "!store/captures"
     ]
   },
   "formatter": {
@@ -20,7 +22,10 @@
     "lineWidth": 100
   },
   "javascript": {
-    "formatter": { "quoteStyle": "single", "semicolons": "asNeeded" }
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "asNeeded"
+    }
   },
   "linter": {
     "enabled": true,

@@ -46,7 +46,7 @@
   /* Type scale for 1280x800. The store downscales every screenshot to
      640x400, so each number here is 2x its effective size. Nothing below
      26px, ever.                                                              */
-  --t-eyebrow: 24px;
+  --t-eyebrow: 26px;
   --t-headline: 52px;
   --t-sub: 26px;
   --t-min: 26px;

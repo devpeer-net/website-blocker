@@ -22,8 +22,9 @@ frame 1 does most of the work.
 
 The two things people get bounced on are covered: every file is a PNG at an
 exact accepted size (a 1281px screenshot is rejected at upload), the screenshots
-are full bleed with square corners and no alpha, and the icon *does* have alpha
-with 16px of transparent padding on each side.
+are full bleed with square corners and no alpha, and the icon *does* have alpha,
+with 78×96 of artwork centred in the 128×128 canvas — 16px of transparent padding top
+and bottom, 25px left and right, since the shield is taller than it is wide.
 
 ## The set
 
@@ -38,13 +39,14 @@ the canvas, which is 13px after the downscale. That is why the UI is enlarged
 | 2 | Add a site, it's out of reach | The options page: header, switch, status line, add field, blocklist |
 | 3 | Turning it off takes a deliberate second | The real "Are you sure?" dialog with a DOI-cited study |
 | 4 | One entry covers the whole domain | The blocklist, with one callout for subdomain coverage |
-| 5 | Nothing ever leaves your browser | Privacy posture — the one thing no screen can show |
+| 5 | Your list never reaches us | Privacy posture — the one thing no screen can show |
 
 Tokens (colours, type scale, gutter, caption position) live in one file,
 `store/frames/frame.css`, and every frame and both tiles use it, so the set
 reads as one product. The palette is the extension's own: `#3a47d1` primary,
 `#3fd9c0` accent, `#0a0f1c`-family ground. Type is the extension's own bundled
-Inter Variable, loaded from `dist/assets/`, not a system fallback.
+Inter Variable, loaded from `node_modules/@fontsource-variable/inter` — deliberately not
+from `dist/assets/`, whose filenames Vite content-hashes and would silently break.
 
 ## Decisions behind the set
 
@@ -103,7 +105,7 @@ Recorded because each one is a trade someone may want to revisit:
    Deliberate — frame 2 is the page, frame 4 is the detail — but if you want
    more variety, frame 4 could become the block page for `old.reddit.com`
    instead; that capture is already in `store/captures/`.
-6. **File sizes** are 78 KB–443 KB. Well under anything worth optimising, but
+6. **File sizes** are 5 KB–443 KB. Well under anything worth optimising, but
    `oxipng -o4` would shave ~20% if you care.
 
 ## Regenerating
@@ -128,8 +130,9 @@ message saying exactly what is missing rather than part-way through. Also needs
 That is a real limitation, so it is worth being plain about what it does and does
 not block: the eight PNGs in `build/` are committed and are the actual
 deliverable, and nothing about building, testing or releasing the extension
-touches this script. Regenerating by hand is also tractable — the frames are
-plain HTML rendered at the sizes in `frames/manifest.json`.
+touches this script. Regenerating by hand is tractable, and deliberately so:
+`store/captures/` is committed alongside the frames, so the HTML renders complete in
+any browser at the sizes in `frames/manifest.json` without the generator.
 
 ## What's in `store/`
 
@@ -146,5 +149,5 @@ plain HTML rendered at the sizes in `frames/manifest.json`.
 | `make-store-assets.sh` | capture → render → verify, end to end |
 
 The frame HTML references captures as `../captures/…` and fonts as
-`../../dist/assets/…`, so to re-render from these copies put `frames/` and
+`../../node_modules/…`, so to re-render from these copies put `frames/` and
 `captures/` back under a `store/` directory inside the project.
