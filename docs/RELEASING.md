@@ -60,6 +60,27 @@ Configured under **Settings → Environments → chrome-web-store**. Keep *Preve
 off: on a one-maintainer project the person who pushes the tag is also the person who
 approves, and turning it on would deadlock every release.
 
+## Uploading to the store by hand
+
+The automated `publish-chrome-web-store` job below is the intended path, but it stays
+dormant until the four values in *One-time Chrome Web Store setup* exist. Until then the
+upload is manual, and the only thing that matters is that **the bytes you upload are the
+bytes on the release page** — not a local rebuild, however confident you are that it is
+identical.
+
+```bash
+gh release download v1.1.0 --repo devpeer-net/website-blocker
+sha256sum -c website-blocker-1.1.0.zip.sha256
+```
+
+Upload that file at the [developer dashboard](https://chrome.google.com/webstore/devconsole)
+→ the item → **Package** → *Upload new package*. Never re-run `pnpm package` and upload the
+result: it will usually match, but "usually" is the whole thing this repository exists to
+avoid, and a mismatch would silently invalidate every tree digest already published.
+
+Once the new version is live, confirm the store is serving it — see below. A release whose
+tree digest does not match the install is a release to withdraw.
+
 ## Verifying a release — for anyone, not just the maintainer
 
 ```bash
@@ -81,6 +102,50 @@ epoch, `TZ=UTC` — so `pnpm package` on the same commit with the same Node and 
 versions reproduces the same bytes. Treat that as a useful cross-check rather than a
 guarantee: compression output can shift between zlib versions. The attestation is the
 claim that holds regardless.
+
+## Verifying what the Web Store installed
+
+Everything above verifies the *upload*. It says nothing about what Chrome actually
+installed, and the obvious extension of it does not work: Google unpacks the zip, repacks
+it as a CRX3 signed with its own key, and adds a `_metadata/` directory carrying its own
+hashes. The container bytes differ on every extension, every time. There is no version of
+`sha256sum` that makes the release zip and the installed CRX agree.
+
+What Google rewraps it does not rewrite, so the payload is comparable. Each release
+publishes a **tree digest** alongside the zip digest: every file hashed individually, the
+resulting `sha256sum`-format listing sorted by path in byte order, and that listing hashed.
+`scripts/verify-install.mjs` computes it, `scripts/package.mjs` emits it at build time, and
+the release notes carry it.
+
+Find the unpacked extension in a Chrome profile:
+
+| Platform | Path |
+|---|---|
+| Linux | `~/.config/google-chrome/Default/Extensions/<id>/<version>_0` |
+| macOS | `~/Library/Application Support/Google/Chrome/Default/Extensions/<id>/<version>_0` |
+| Windows | `%LOCALAPPDATA%\Google\Chrome\User Data\Default\Extensions\<id>\<version>_0` |
+
+Substitute the profile for `Default` if it is not the first one, and note the trailing
+`_0` increments when Chrome re-unpacks the same version. Then either:
+
+```bash
+node scripts/verify-install.mjs --zip website-blocker-1.1.0.zip --installed <dir>
+```
+
+which names every file that differs — or, better, the version that runs none of this
+repository's code:
+
+```bash
+cd <dir>
+find . -type f -not -path './_metadata/*' -printf '%P\n' \
+  | LC_ALL=C sort | xargs -d '\n' sha256sum | sha256sum
+```
+
+Both produce the tree digest on the release page. `_metadata/` is excluded because it is
+Google's addition — it is the one directory that was never in the upload.
+
+A mismatch means the store is serving something other than the release. That is worth
+treating as an incident rather than a curiosity.
 
 ## One-time Chrome Web Store setup
 

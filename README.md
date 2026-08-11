@@ -108,7 +108,29 @@ The last command trusts nothing in this repository — not the release page, not
 checksum. Publishing to the Chrome Web Store is a separate, human-approved step, and every
 approval is recorded in the repository's deployment history.
 
-[docs/RELEASING.md](docs/RELEASING.md) has the details, including how to cut one.
+### Checking what the Web Store actually installed
+
+The digest above identifies the upload. It cannot identify the install, and no project can
+make it: Google unpacks every upload, repacks it as a CRX signed with its own key, and adds
+a `_metadata/` directory. Those bytes differ by construction. Anyone inviting you to
+compare the two digests directly is describing a check that has never once passed.
+
+What survives the repack is the payload. Every release therefore also publishes a **tree
+digest** — the files hashed individually, then the listing hashed — which you can
+regenerate from your own Chrome profile:
+
+```bash
+cd ~/.config/google-chrome/Default/Extensions/<extension-id>/<version>_0
+find . -type f -not -path './_metadata/*' -printf '%P\n' \
+  | LC_ALL=C sort | xargs -d '\n' sha256sum | sha256sum
+```
+
+That is deliberately plain coreutils — the check worth having is the one that runs none of
+my code. If it matches the tree digest on the release page, the extension Chrome is running
+is this build, file for file. There is also
+[`scripts/verify-install.mjs`](scripts/verify-install.mjs), which does the same comparison
+and names any file that differs. [docs/RELEASING.md](docs/RELEASING.md) has the
+per-platform profile paths and how to cut a release.
 
 ## Development
 

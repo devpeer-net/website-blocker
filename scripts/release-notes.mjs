@@ -10,10 +10,10 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const [version, zipName, sha256] = process.argv.slice(2)
+const [version, zipName, sha256, tree] = process.argv.slice(2)
 
-if (!version || !zipName || !sha256) {
-  console.error('usage: node scripts/release-notes.mjs <version> <zip-name> <sha256>')
+if (!version || !zipName || !sha256 || !tree) {
+  console.error('usage: node scripts/release-notes.mjs <version> <zip-name> <sha256> <tree>')
   process.exit(1)
 }
 
@@ -73,6 +73,28 @@ const lines = [
   '```bash',
   `gh attestation verify ${zipName} --repo ${repo}`,
   '```',
+  '',
+  '### Verify what the Web Store installed',
+  '',
+  'The digest above identifies the *upload*. It cannot identify the *install*: Google',
+  'repacks every upload into a CRX signed with its own key and adds a `_metadata/`',
+  'directory, so those bytes differ by construction. What survives the repack is the',
+  'payload, and this is its digest:',
+  '',
+  '```',
+  `${tree}  tree`,
+  '```',
+  '',
+  'Regenerate it from your own profile — if it matches, the Web Store is serving this',
+  'exact build. Point at the versioned directory Chrome unpacked the extension into:',
+  '',
+  '```bash',
+  "find . -type f -not -path './_metadata/*' -printf '%P\\n' \\",
+  "  | LC_ALL=C sort | xargs -d '\\n' sha256sum | sha256sum",
+  '```',
+  '',
+  `Or \`node scripts/verify-install.mjs --zip ${zipName} --installed <dir>\`, which names`,
+  'any file that differs. `docs/RELEASING.md` has the per-platform paths.',
 ]
 
 if (trail) lines.push('', trail)

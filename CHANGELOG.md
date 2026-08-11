@@ -1,9 +1,10 @@
 # Changelog
 
 Every released version has a [GitHub Release](https://github.com/devpeer-net/website-blocker/releases)
-carrying the exact `.zip` that was uploaded to the Chrome Web Store, its SHA-256, and a
-build provenance attestation. See [docs/RELEASING.md](docs/RELEASING.md) for how a release
-is cut and how to verify one.
+carrying the exact `.zip` that is uploaded to the Chrome Web Store, its SHA-256, a build
+provenance attestation, and a tree digest you can regenerate from an installed copy to
+check that the store is serving that same build. See [docs/RELEASING.md](docs/RELEASING.md)
+for how a release is cut and how to verify one.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions
 follow Chrome's extension version rule — one to four dot-separated integers — rather than

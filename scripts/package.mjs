@@ -24,6 +24,7 @@ import {
 } from 'node:fs'
 import { dirname, join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { digestTree } from './verify-install.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const dist = join(root, 'dist')
@@ -97,12 +98,20 @@ execFileSync('zip', ['-X', '-9', '-q', '-@', zipPath], {
 const digest = createHash('sha256').update(readFileSync(zipPath)).digest('hex')
 writeFileSync(`${zipPath}.sha256`, `${digest}  ${zipName}\n`) // `sha256sum -c` format
 
+// The digest above identifies the upload. It cannot identify the install: the Web Store
+// repacks the zip into a CRX signed with Google's key, so those bytes never match again.
+// The tree digest hashes the payload instead of the container, which is what survives the
+// repack — and is therefore the number someone can regenerate from their own Chrome
+// profile to prove the store is serving this build. See scripts/verify-install.mjs.
+const { digest: tree } = digestTree(dist)
+
 if (process.env.GITHUB_OUTPUT) {
   appendFileSync(
     process.env.GITHUB_OUTPUT,
-    `version=${version}\nzip=${zipName}\nsha256=${digest}\n`,
+    `version=${version}\nzip=${zipName}\nsha256=${digest}\ntree=${tree}\n`,
   )
 }
 
 console.log(`${zipName}  (${files.length} files)`)
 console.log(`sha256  ${digest}`)
+console.log(`tree    ${tree}`)

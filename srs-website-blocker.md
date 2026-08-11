@@ -1,6 +1,6 @@
 # SRS: Website Blocker
 
-> Status: Approved — implemented in v1.0.0 | Owner: Tom | Last updated: 2026-08-08
+> Status: Approved — implemented in v1.0.0 | Owner: DevPeer | Last updated: 2026-08-08
 >
 > Rules: every requirement gets an ID, a priority (H=high / M=medium / L=low), and is
 > testable. If you can't write a pass/fail check for it, it's not a requirement — it's a goal.
