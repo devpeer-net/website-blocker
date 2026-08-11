@@ -237,12 +237,40 @@ very deployment that defines it.
 
 ## Why it is built this way
 
-**No third-party actions handle credentials.** The release is created with `gh`, which
-ships on the runner, and the store upload is four `curl` calls you can read in
-`release.yml`. Convenient marketplace actions exist for both; each one would be unaudited
-code holding either a token with write access to this repository or the keys to publish to
-every user. For a project whose entire proposition is *you don't have to trust me*, that is
-the wrong trade.
+**No third-party action handles the store credentials or the release token.** The release
+is created with `gh`, which ships on the runner, and the store upload is four `curl` calls
+you can read in `release.yml`. Convenient marketplace actions exist for both; each one
+would be unaudited code holding either a token with write access to this repository or the
+keys to publish to every user. For a project whose entire proposition is *you don't have to
+trust me*, that is the wrong trade.
+
+That is a narrower claim than "no third-party action handles credentials", and the
+difference matters. `pnpm/action-setup` — the only third-party action here — runs in the
+`package` job, and a job granted `id-token: write` exports `ACTIONS_ID_TOKEN_REQUEST_TOKEN`
+into the environment of *every* step in it. Any action in that job can mint an OIDC token.
+
+**Every action is pinned to a commit SHA.** `@v7` is a mutable tag its owner can move at
+any time, so a tag reference is a standing instruction to run whatever that account
+publishes next. The version stays in a trailing comment because a bare SHA tells a reader
+nothing.
+
+The `package` job is why this is worth doing. It holds `id-token: write` and
+`attestations: write`, which together are the authority to have GitHub sign a statement
+about what a build contains. An action that changed under it could alter the zip *and* have
+that alteration attested — a valid signature vouching for the wrong bytes. That is worse
+than losing the store credentials alone, because it is the specific failure the attestation
+exists to rule out: nothing downstream would look wrong. The only other integrity check in
+the pipeline is `sha256sum -c` against a digest produced by the same compromised job.
+
+**Pinning does not cover a malicious new release.** It defends against a tag being moved
+under a version that was already reviewed; it does nothing if a fresh version is bad on the
+day it ships, and it then freezes you on it. Weigh that when a Dependabot PR moves a pin in
+this job — particularly `actions/attest-build-provenance`, currently pinned to v4.2.2,
+published five days before it was adopted here.
+
+Pinning alone would also rot, so `.github/dependabot.yml` opens a weekly PR moving the pins
+forward. Review those the way you would review any other code that runs with those
+permissions.
 
 **Verification is called, not copied.** `release.yml` invokes `ci.yml` through
 `workflow_call`, so a release can never be verified more loosely than a pull request.
