@@ -24,6 +24,7 @@ import {
 } from 'node:fs'
 import { dirname, join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { contentDigest, hashDirectory } from './verify-install.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const dist = join(root, 'dist')
@@ -97,12 +98,21 @@ execFileSync('zip', ['-X', '-9', '-q', '-@', zipPath], {
 const digest = createHash('sha256').update(readFileSync(zipPath)).digest('hex')
 writeFileSync(`${zipPath}.sha256`, `${digest}  ${zipName}\n`) // `sha256sum -c` format
 
+// The digest above identifies the upload, and nothing a user has can be compared against
+// it: the Web Store repacks the zip into a CRX signed with Google's key, and Chrome then
+// rewrites manifest.json and every image as it installs them. The content digest is the
+// number that does survive — a hash over the per-file treehashes, in the same form Google
+// signs into the `_metadata/verified_contents.json` it stores beside an install. That is
+// what lets anyone check the store is serving this build. See scripts/verify-install.mjs.
+const content = contentDigest(hashDirectory(dist))
+
 if (process.env.GITHUB_OUTPUT) {
   appendFileSync(
     process.env.GITHUB_OUTPUT,
-    `version=${version}\nzip=${zipName}\nsha256=${digest}\n`,
+    `version=${version}\nzip=${zipName}\nsha256=${digest}\ncontent=${content}\n`,
   )
 }
 
 console.log(`${zipName}  (${files.length} files)`)
-console.log(`sha256  ${digest}`)
+console.log(`sha256   ${digest}`)
+console.log(`content  ${content}`)

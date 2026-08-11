@@ -34,6 +34,7 @@ jobs:
       version: ${{ steps.package.outputs.version }}
       zip: ${{ steps.package.outputs.zip }}
       sha256: ${{ steps.package.outputs.sha256 }}
+      content: ${{ steps.package.outputs.content }}
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -89,8 +90,9 @@ jobs:
           VERSION: ${{ needs.package.outputs.version }}
           ZIP: ${{ needs.package.outputs.zip }}
           SHA256: ${{ needs.package.outputs.sha256 }}
+          CONTENT: ${{ needs.package.outputs.content }}
         run: |
-          node scripts/release-notes.mjs "$VERSION" "$ZIP" "$SHA256" > notes.md
+          node scripts/release-notes.mjs "$VERSION" "$ZIP" "$SHA256" "$CONTENT" > notes.md
           gh release create "$GITHUB_REF_NAME" \
             --title "v$VERSION" \
             --notes-file notes.md \

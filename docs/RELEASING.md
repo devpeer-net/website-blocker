@@ -60,6 +60,28 @@ Configured under **Settings → Environments → chrome-web-store**. Keep *Preve
 off: on a one-maintainer project the person who pushes the tag is also the person who
 approves, and turning it on would deadlock every release.
 
+## Uploading to the store by hand
+
+The automated `publish-chrome-web-store` job below is the intended path. Until the four
+values in *One-time Chrome Web Store setup* exist, leave its deployment **unapproved** —
+approving it before then does not skip it, it fails the run at the credentials check and
+marks the release red. Until then the upload is manual, and the only thing that matters is
+that **the bytes you upload are the bytes on the release page** — not a local rebuild,
+however confident you are that it is identical.
+
+```bash
+gh release download v1.1.0 --repo devpeer-net/website-blocker
+sha256sum -c website-blocker-1.1.0.zip.sha256
+```
+
+Upload that file at the [developer dashboard](https://chrome.google.com/webstore/devconsole)
+→ the item → **Package** → *Upload new package*. Never re-run `pnpm package` and upload the
+result: it will usually match, but "usually" is the whole thing this repository exists to
+avoid, and a mismatch would silently invalidate every tree digest already published.
+
+Once the new version is live, confirm the store is serving it — see below. A release whose
+tree digest does not match the install is a release to withdraw.
+
 ## Verifying a release — for anyone, not just the maintainer
 
 ```bash
@@ -81,6 +103,73 @@ epoch, `TZ=UTC` — so `pnpm package` on the same commit with the same Node and 
 versions reproduces the same bytes. Treat that as a useful cross-check rather than a
 guarantee: compression output can shift between zlib versions. The attestation is the
 claim that holds regardless.
+
+## Verifying what the Web Store is serving
+
+Everything above verifies the *upload*. It says nothing about what the store hands to
+users, and the two obvious extensions of it both fail.
+
+You cannot hash the CRX: Google repacks every upload and signs it with its own key, so the
+container differs by construction.
+
+You cannot hash the unpacked files either, which is the mistake that looks like it works.
+Chrome's unpacker **rewrites files as it installs them** — `RewriteManifestFile()`
+re-serialises `manifest.json` and injects the `key` derived from the CRX header, the image
+sanitiser decodes and re-encodes every manifest-referenced image through Chrome's own PNG
+encoder, and locale files are re-serialised too. Measured against a store install of an
+88-file extension on a developer machine here, 61 files differed from what was uploaded.
+For this extension it is `manifest.json` plus all four icons — and since
+`scripts/package.mjs` refuses to ship a `key`, the manifest can *never* match. A checker
+built that way cries wolf on every honest install.
+
+What works is Google's own record. Beside every Web Store install Chrome stores
+`_metadata/verified_contents.json`: a Google-signed manifest of the hash of each file **as
+uploaded**, before any local rewriting. Comparing the release zip against it answers the
+question actually worth asking — *is the package Google received the one published here?* —
+and is unaffected by whatever Chrome did afterwards.
+
+Those hashes are Chrome's "treehash": the file split into 4096-byte blocks, each block
+SHA-256'd, combined up a Merkle tree with branch factor 128, base64url encoded.
+`scripts/verify-install.mjs` implements it; `scripts/package.mjs` emits a digest over the
+whole set at build time; the release notes carry it.
+
+Because that implementation is the load-bearing part, it can check itself against any
+Web Store extension you already have installed:
+
+```bash
+node scripts/verify-install.mjs --verify-self --installed <any-extension-dir>
+```
+
+It reports how many on-disk files reproduce their signed hash. Some will not — those are
+the ones Chrome rewrote — but if *none* do, the implementation is wrong and it says so.
+
+Find the unpacked extension in a Chrome profile:
+
+| Platform | Path |
+|---|---|
+| Linux | `~/.config/google-chrome/Default/Extensions/<id>/<version>_0` |
+| macOS | `~/Library/Application Support/Google/Chrome/Default/Extensions/<id>/<version>_0` |
+| Windows | `%LOCALAPPDATA%\Google\Chrome\User Data\Default\Extensions\<id>\<version>_0` |
+
+Substitute the profile for `Default` if it is not the first one, and note the trailing
+`_0` increments when Chrome re-unpacks the same version. Then:
+
+```bash
+node scripts/verify-install.mjs --zip website-blocker-1.1.0.zip --installed <dir>
+```
+
+It prints the content digest for the release and for the store's signed record, and on a
+difference names every file, before exiting non-zero.
+
+**What this proves, exactly.** That the package Google received, and signed as the contents
+of this extension at this version, was built from this release. It does not verify Google's
+signature over `verified_contents.json` — that would need Google's key, and Chrome already
+refuses to run an extension whose files disagree with that record. So the trust boundary is
+that file as Chrome wrote it. Anyone who can rewrite it locally can also rewrite the
+extension, and at that point the browser is the thing that has been compromised.
+
+A mismatch means the store is serving something other than this release. That is worth
+treating as an incident rather than a curiosity.
 
 ## One-time Chrome Web Store setup
 
