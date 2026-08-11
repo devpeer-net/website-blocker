@@ -8,7 +8,10 @@
       "!node_modules",
       "!playwright-report",
       "!test-results",
-      "!src/styles/app.css"
+      "!src/styles/app.css",
+      "!store/frames",
+      "!store/build",
+      "!store/captures"
     ]
   },
   "formatter": {
@@ -18,7 +21,10 @@
     "lineWidth": 100
   },
   "javascript": {
-    "formatter": { "quoteStyle": "single", "semicolons": "asNeeded" }
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "asNeeded"
+    }
   },
   "linter": {
     "enabled": true,

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Website Blocker — 3 · the science nudge</title>
+<link rel="stylesheet" href="frame.css">
+<style>
+  /* Frame 3 — the differentiator. This dialog is what the options page shows
+     when you move the switch to off: a real, DOI-cited study, then your
+     choice. Nobody else in the category puts the research at the moment of
+     temptation, so it earns the middle slot.
+
+     Capture is the live [role=dialog] element, 416x338 CSS at 2x, placed at
+     1.9x (14px body text -> 26.6px). Only the dialog's bottom padding runs off
+     the canvas; both buttons stay fully visible. The radius matches the app's
+     --radius: 10px x 1.9 = 19px, which also clips the darkened backdrop that
+     an element screenshot leaves in the corners. */
+  .dialog {
+    width: 790px; border-radius: 19px; overflow: hidden;
+    box-shadow: 0 46px 110px -20px rgba(0,0,0,.78), 0 0 0 1px rgba(255,255,255,.13);
+  }
+  .dialog img { display: block; width: 790px; }
+</style>
+</head>
+<body>
+
+<div class="canvas">
+  <div class="bg"></div>
+  <div class="stage">
+
+    <div class="copy">
+      <div class="eyebrow">Every nudge cites a real study</div>
+      <h1 class="headline">Turning it off takes <em>a deliberate second</em></h1>
+    </div>
+
+    <div class="ui">
+      <div class="dialog">
+        <img src="../captures/ui-dialog.png" alt="">
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

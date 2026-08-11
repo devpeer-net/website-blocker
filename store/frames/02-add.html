@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Website Blocker — 2 · the whole app</title>
+<link rel="stylesheet" href="frame.css">
+<style>
+  /* Frame 2 — the core loop. The options page is the entire product: one
+     header, one input, one list. The three captures below are the page's own
+     <header>, <form> and <section> elements, stacked with the 32px CSS gaps
+     the page really uses (32 x 1.9 = 61px) on the page's own background, so
+     this is the layout as shipped, not a mock-up.
+
+     1.9x is the scale at which the page's 14px body text reaches 26px here.
+     528 CSS px of content + 35 CSS px of page margin either side is exactly a
+     598px-wide browser window, so the proportions are the real ones too. */
+  .card      { width: 1135px; padding: 44px 66px 0; }
+  .card img  { width: 1003px; }
+  .gap       { height: 61px; }
+</style>
+</head>
+<body>
+
+<div class="canvas">
+  <div class="bg"></div>
+  <div class="stage">
+
+    <div class="copy">
+      <div class="eyebrow">No setup, no account</div>
+      <h1 class="headline">Add a site, it’s <em>out of reach</em></h1>
+    </div>
+
+    <div class="ui">
+      <div class="card">
+        <img src="../captures/ui-header.png" alt="">
+        <div class="gap"></div>
+        <img src="../captures/ui-form.png" alt="">
+        <div class="gap"></div>
+        <img src="../captures/ui-list.png" alt="">
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,44 @@
+[
+  {
+    "html": "store/frames/01-block.html",
+    "out": "store/build/01-block-page.png",
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "html": "store/frames/02-add.html",
+    "out": "store/build/02-add-a-site.png",
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "html": "store/frames/03-nudge.html",
+    "out": "store/build/03-science-nudge.png",
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "html": "store/frames/04-subdomains.html",
+    "out": "store/build/04-subdomains.png",
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "html": "store/frames/05-private.html",
+    "out": "store/build/05-private.png",
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "html": "store/frames/tile-440.html",
+    "out": "store/build/promo-tile-440x280.png",
+    "width": 440,
+    "height": 280
+  },
+  {
+    "html": "store/frames/tile-1400.html",
+    "out": "store/build/marquee-1400x560.png",
+    "width": 1400,
+    "height": 560
+  }
+]

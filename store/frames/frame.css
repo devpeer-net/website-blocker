@@ -1,0 +1,381 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   CHROME WEB STORE CANVAS — shared tokens for Website Blocker
+   Derived from assets/canvas-template.html in the chrome-webstore-screenshots
+   skill. Kept as one stylesheet rather than copied per frame so the five
+   screenshots and the two promo tiles cannot drift apart — shared tokens are
+   what make a listing read as one product.
+
+   Render with:
+     node scripts/render.mjs --batch store/frames/manifest.json
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── FONTS ────────────────────────────────────────────────────────────────
+   The extension ships Inter Variable and JetBrains Mono Variable locally
+   (it refuses to call a font CDN), so the frames use the very same files.
+   A bare `font-family: Inter` would silently fall back to DejaVu Sans on a
+   headless Linux box; render.mjs warns if one of these fails to load.        */
+@font-face {
+  font-family: "Inter Var";
+  /* Resolved from node_modules, not dist/: Vite content-hashes the emitted
+     filename, so a dist/ path breaks on the next build and the frames would
+     silently fall back to a system face instead of failing loudly. */
+  src: url("../../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2")
+    format("woff2-variations");
+  font-weight: 100 900;
+  font-display: block;
+}
+
+:root {
+  /* ── TOKENS ── every value below is taken from the extension's own theme
+     (src CSS custom properties, dark palette) so the listing, the icon and
+     the product agree. Set once, reused by all seven canvases.              */
+  --ink: #070b16; /* background base, a shade under the app's #0a0f1c */
+  --ink-2: #131c33; /* raised surface                                   */
+  --brand: #3a47d1; /* --primary (light theme)                          */
+  --brand-2: #0e7c6b; /* --accent  (light theme)                          */
+  --accent: #3fd9c0; /* --accent  (dark theme) — the one highlight       */
+  --on-dark: #ffffff;
+  --on-dark-mut: #a9b6d0;
+  --page: #f7f9fc; /* --bg (light theme) — the captures' own backdrop  */
+
+  --radius: 18px;
+  --pad: 72px; /* canvas gutter — nothing touches an edge          */
+  --pad-top: 52px;
+  --gap-ui: 26px; /* caption → UI                                     */
+
+  /* Type scale for 1280x800. The store downscales every screenshot to
+     640x400, so each number here is 2x its effective size. Nothing below
+     26px, ever.                                                              */
+  --t-eyebrow: 26px;
+  --t-headline: 52px;
+  --t-sub: 26px;
+  --t-min: 26px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* The render surface. Exact size, square corners, full bleed — the store
+   requires no padding and no rounded corners on the frame itself. Rounding
+   belongs to the elements inside.                                           */
+.canvas {
+  position: relative;
+  width: 1280px;
+  height: 800px;
+  overflow: hidden;
+  font-family: "Inter Var", "Liberation Sans", system-ui, sans-serif;
+  font-synthesis-weight: none;
+  color: var(--on-dark);
+  background: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Saturated, dark, defined. The store lists on a white page, so a light-grey
+   canvas dissolves into it.                                                  */
+.bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      900px 640px at 12% -12%,
+      color-mix(in oklab, var(--brand) 62%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      780px 580px at 97% 110%,
+      color-mix(in oklab, var(--brand-2) 62%, transparent),
+      transparent 70%
+    ),
+    linear-gradient(160deg, var(--ink-2), var(--ink) 60%);
+}
+/* A faint grid stops big flat gradients from banding after the downscale.    */
+.bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.055;
+  background-image:
+    linear-gradient(to right, #fff 1px, transparent 1px),
+    linear-gradient(to bottom, #fff 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(circle at 50% 38%, #000 32%, transparent 80%);
+}
+
+/* ── LAYOUT ─────────────────────────────────────────────────────────────── */
+.stage {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--pad-top) var(--pad) 0;
+  text-align: center;
+}
+
+.copy {
+  max-width: 1120px;
+}
+.eyebrow {
+  font-size: var(--t-eyebrow);
+  font-weight: 650;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+/* 3–7 words, verb-led, one idea per frame.                                   */
+.headline {
+  font-size: var(--t-headline);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.022em;
+  text-wrap: balance;
+}
+.headline em {
+  font-style: normal;
+  color: var(--accent);
+}
+.sub {
+  font-size: var(--t-sub);
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--on-dark-mut);
+  margin-top: 12px;
+  text-wrap: pretty;
+  max-width: 860px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ui {
+  position: relative;
+  margin-top: var(--gap-ui);
+}
+
+/* ── UI TREATMENTS ───────────────────────────────────────────────────────
+   Captures come out of capture_ui.mjs at 2x device scale, so they can be
+   enlarged on the canvas without softening. Every placement below is sized
+   so the smallest text that matters lands at >= 26px here.                   */
+
+/* A page served by the extension, shown in its browser tab.                  */
+.window {
+  border-radius: var(--radius);
+  background: var(--page);
+  overflow: hidden;
+  box-shadow:
+    0 44px 100px -22px rgba(0, 0, 0, 0.72),
+    0 0 0 1px rgba(255, 255, 255, 0.13);
+}
+.chrome {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 56px;
+  padding: 0 20px;
+  background: #e4e7f0;
+}
+.dots {
+  display: flex;
+  gap: 9px;
+}
+.dots i {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #c6cbd9;
+}
+.dots i:nth-child(1) {
+  background: #ff6058;
+}
+.dots i:nth-child(2) {
+  background: #ffbd2e;
+}
+.dots i:nth-child(3) {
+  background: #28ca42;
+}
+.omnibox {
+  flex: 1;
+  height: 34px;
+  border-radius: 17px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  gap: 10px;
+  font-size: 17px;
+  color: #5a6178;
+  letter-spacing: -0.01em;
+}
+.viewport {
+  position: relative;
+  overflow: hidden;
+  background: var(--page);
+}
+.viewport img {
+  display: block;
+  margin: 0 auto;
+}
+
+/* A floating slice of the real page — same backdrop colour the page uses.    */
+.card {
+  background: var(--page);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow:
+    0 44px 100px -22px rgba(0, 0, 0, 0.72),
+    0 0 0 1px rgba(255, 255, 255, 0.13);
+}
+.card img {
+  display: block;
+}
+
+/* At most one callout per frame; two and the eye has nowhere to land.        */
+.callout {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  font-size: var(--t-min);
+  font-weight: 650;
+  color: #07231f;
+  background: var(--accent);
+  box-shadow: 0 18px 44px -12px rgba(63, 217, 192, 0.6);
+  white-space: nowrap;
+}
+
+/* A quiet pill for a claim the panels do not cover.                          */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 28px;
+  border-radius: 999px;
+  background: rgba(63, 217, 192, 0.1);
+  border: 1px solid rgba(63, 217, 192, 0.38);
+  font-size: var(--t-min);
+  font-weight: 500;
+  color: #cdf6ee;
+}
+.pill svg {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Trust panels (frame 5). Not a screenshot — the store's own guidance puts
+   privacy posture in the last frame, and there is no screen that shows it.   */
+.panels {
+  display: flex;
+  gap: 26px;
+}
+.panel {
+  width: 360px;
+  padding: 38px 32px 34px;
+  border-radius: var(--radius);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  text-align: left;
+}
+.panel svg {
+  width: 46px;
+  height: 46px;
+  stroke: var(--accent);
+  stroke-width: 1.9;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.panel h3 {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-top: 22px;
+}
+.panel p {
+  font-size: var(--t-min);
+  font-weight: 400;
+  line-height: 1.38;
+  color: var(--on-dark-mut);
+  margin-top: 10px;
+}
+
+/* ── TILE MODES ───────────────────────────────────────────────────────────
+   Promo tiles are brand surfaces, not screenshots: a lockup, saturated
+   colour, edge to edge, legible at half size.                               */
+.tile-440 {
+  width: 440px;
+  height: 280px;
+}
+.tile-1400 {
+  width: 1400px;
+  height: 560px;
+}
+.tile-440 .bg,
+.tile-1400 .bg {
+  background: radial-gradient(
+    120% 130% at 8% 0%,
+    #4b58e8 0%,
+    #2b36ad 38%,
+    #0f5f6b 78%,
+    #0b4f5c 100%
+  );
+}
+.tile-440 .bg::after,
+.tile-1400 .bg::after {
+  opacity: 0.07;
+  background-size: 34px 34px;
+  mask-image: radial-gradient(circle at 50% 50%, #000 34%, transparent 86%);
+}
+.tile-1400 .bg::after {
+  background-size: 72px 72px;
+}
+
+.lockup {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+}
+.lockup .mark {
+  filter: drop-shadow(0 14px 30px rgba(0, 0, 0, 0.42));
+}
+.wordmark {
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: #fff;
+}
+.tagline {
+  font-weight: 500;
+  color: #cfe9ff;
+  letter-spacing: 0.01em;
+}
+
+.tile-440 .wordmark {
+  font-size: 42px;
+  margin-top: 18px;
+}
+.tile-440 .tagline {
+  font-size: 19px;
+  margin-top: 10px;
+}
+.tile-1400 .wordmark {
+  font-size: 104px;
+  margin-top: 34px;
+}
+.tile-1400 .tagline {
+  font-size: 40px;
+  margin-top: 20px;
+}

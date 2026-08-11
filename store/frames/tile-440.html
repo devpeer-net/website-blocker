@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Website Blocker — small promo tile</title>
+<link rel="stylesheet" href="frame.css">
+<style>
+  /* 440x280 small promo tile (required). This is the surface that appears in
+     search results and category pages at roughly half size, so the docs are
+     blunt about it: a lockup, not a shrunken screenshot. Saturated colour, no
+     UI, no browser chrome, edge to edge, and a wordmark that survives being
+     halved (42px -> 21px).
+
+     Same shield as the store icon and the marquee, inverted so it holds up on
+     the saturated ground. */
+  .lockup .mark { width: 106px; height: 106px; }
+</style>
+</head>
+<body>
+
+<div class="canvas tile-440">
+  <div class="bg"></div>
+  <div class="lockup">
+    <svg class="mark" viewBox="0 0 24 24" fill="none">
+      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" fill="#ffffff"/>
+      <path d="m9 12 2 2 4-4" stroke="#2b36ad" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="wordmark">Website Blocker</div>
+    <div class="tagline">Block distracting sites</div>
+  </div>
+</div>
+
+</body>
+</html>

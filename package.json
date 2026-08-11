@@ -20,7 +20,8 @@
     "package": "pnpm build && node scripts/package.mjs",
     "check:version": "node scripts/check-version.mjs",
     "verify:install": "node scripts/verify-install.mjs",
-    "release:bump": "node scripts/bump-version.mjs"
+    "release:bump": "node scripts/bump-version.mjs",
+    "store:assets": "./store/make-store-assets.sh"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
