@@ -7,21 +7,6 @@
       "Principal": "*",
       "Action": "s3:GetObject",
       "Resource": "arn:aws:s3:::website-blocker-extension/privacy.html"
-    },
-    {
-      "Sid": "DenyInsecureTransport",
-      "Effect": "Deny",
-      "Principal": "*",
-      "Action": "s3:*",
-      "Resource": [
-        "arn:aws:s3:::website-blocker-extension",
-        "arn:aws:s3:::website-blocker-extension/*"
-      ],
-      "Condition": {
-        "Bool": {
-          "aws:SecureTransport": "false"
-        }
-      }
     }
   ]
 }

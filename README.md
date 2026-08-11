@@ -19,17 +19,23 @@ switching blocking off — and keeps everything else frictionless.
 
 ## Install
 
-Not yet on the Chrome Web Store. Take the zip from the
-[latest release](https://github.com/devpeer-net/website-blocker/releases/latest) — or build
-it yourself:
+**[Website Blocker on the Chrome Web Store](https://chromewebstore.google.com/detail/website-blocker-block-dis/ilkclodiadkjmnclbkghbnbhnplnfhia)**
+
+You do not have to take the store's word for what it is serving. Every release publishes a
+content digest, and [`scripts/verify-install.mjs`](scripts/verify-install.mjs) checks the
+installed extension against it — see [Releases](#releases).
+
+Or run it unpacked, from the zip on the
+[latest release](https://github.com/devpeer-net/website-blocker/releases/latest) or from
+source:
 
 ```bash
 pnpm install
 pnpm build
 ```
 
-Either way, open `chrome://extensions`, turn on **Developer mode**, choose **Load
-unpacked**, and select the `dist/` folder (or the unzipped release).
+Then open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked**, and
+select the `dist/` folder (or the unzipped release).
 
 Two settings are worth changing right after installing:
 
