@@ -2,7 +2,7 @@
 
 Every released version has a [GitHub Release](https://github.com/devpeer-net/website-blocker/releases)
 carrying the exact `.zip` that is uploaded to the Chrome Web Store, its SHA-256, a build
-provenance attestation, and a tree digest you can regenerate from an installed copy to
+provenance attestation, and a content digest you can regenerate from an installed copy to
 check that the store is serving that same build. See [docs/RELEASING.md](docs/RELEASING.md)
 for how a release is cut and how to verify one.
 
@@ -12,15 +12,10 @@ full semver, because Chrome rejects pre-release suffixes such as `1.1.0-rc.1`.
 
 ## [Unreleased]
 
-### Changed
-
-- The extension name and store summary are the final listing copy:
-  `Website Blocker - Block Distracting Sites, Private & Simple`. The toolbar tooltip stays
-  plain `Website Blocker`.
-
 ## [1.0.0] — 2026-08-08
 
-First release.
+First release. Published to the Chrome Web Store as
+`Website Blocker - Block Distracting Sites, Private & Simple`.
 
 ### Added
 
