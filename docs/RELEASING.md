@@ -155,6 +155,21 @@ code holding either a token with write access to this repository or the keys to 
 every user. For a project whose entire proposition is *you don't have to trust me*, that is
 the wrong trade.
 
+**Every action is pinned to a commit SHA.** `@v7` is a branch that its owner can move, so a
+tag reference is a standing instruction to run whatever that account publishes next. The
+version stays in a trailing comment because a bare SHA tells a reader nothing.
+
+The job that matters is `package`. It holds `id-token: write` and `attestations: write`,
+which together are the authority to have GitHub sign a statement about what a build
+contains. An action that could change under it could alter the zip *and* have that
+alteration attested — the attestation would be valid and would be vouching for the wrong
+bytes. That is a worse outcome than losing the store credentials, because it is the failure
+the attestation exists to rule out, and nothing downstream would look wrong.
+
+Pinning alone would rot, so `.github/dependabot.yml` opens a weekly PR moving the pins
+forward. Review those the way you would review any other code that runs with those
+permissions.
+
 **Verification is called, not copied.** `release.yml` invokes `ci.yml` through
 `workflow_call`, so a release can never be verified more loosely than a pull request.
 
