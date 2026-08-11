@@ -1,0 +1,38 @@
+# Pinning actions to commit SHAs trades one risk for another: a mutable tag cannot be
+# hijacked, but a pin never picks up a security fix on its own. Dependabot is the half that
+# makes the pin sustainable — it opens a PR rewriting the SHA and the version comment
+# together, so the pins stay current without anyone reading release feeds.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      # One PR for the routine bumps — a compromised action is not a per-action decision to
+      # make on a Monday morning, and a single reviewable diff is more likely to be read.
+      #
+      # `update-types` is required, not decoration: a group with only `patterns` takes every
+      # semver bump, so a major would land in the same PR as the patches. One breaking input
+      # change would then redden CI and block the security fixes the file exists to deliver.
+      actions:
+        patterns: ['*']
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    # Grouped PRs count against this too. Two groups plus the majors that arrive on their
+    # own need headroom, or the later ones are silently never proposed.
+    open-pull-requests-limit: 10
+    # Majors are deliberately left ungrouped so each lands as its own PR: React, Tailwind
+    # and Vite majors have all shipped breaking changes that the suite would catch but a
+    # grouped diff would bury.
+    groups:
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+      production-minor-patch:
+        dependency-type: production
+        update-types: [minor, patch]

@@ -1,0 +1,60 @@
+name: Bug report
+description: Something does not work — a site that will not block, a rule that misfires, a broken page.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Found a security problem? Close this and use
+        [private reporting](https://github.com/devpeer-net/website-blocker/security/advisories/new) instead.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected instead
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Add example.com to the blocklist
+        2. Open https://sub.example.com
+        3. The page loads instead of being blocked
+    validations:
+      required: true
+
+  - type: input
+    id: domain
+    attributes:
+      label: The domain involved, if any
+      description: Exactly as you typed it, and exactly as the list shows it after adding — the difference is often the bug.
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Extension version
+      description: chrome://extensions, or the release you installed.
+    validations:
+      required: true
+
+  - type: input
+    id: chrome
+    attributes:
+      label: Chrome version and OS
+      placeholder: Chrome 139, Windows 11
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Two settings that cause most reports
+      description: Not required, but checking saves a round trip.
+      options:
+        - label: Site access is set to "On all sites" (anything narrower shows Chrome's grey error page instead of the block page)
+        - label: This also happens in a normal window, not only in Incognito

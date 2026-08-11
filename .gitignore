@@ -6,3 +6,12 @@ test-results/
 *.zip
 *.zip.sha256
 .DS_Store
+
+# Never in a public repository. docs/RELEASING.md has you handling an OAuth client secret
+# and a refresh token locally; this is the cheap guard against one landing in a commit.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12

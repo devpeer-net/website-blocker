@@ -108,7 +108,32 @@ The last command trusts nothing in this repository — not the release page, not
 checksum. Publishing to the Chrome Web Store is a separate, human-approved step, and every
 approval is recorded in the repository's deployment history.
 
-[docs/RELEASING.md](docs/RELEASING.md) has the details, including how to cut one.
+### Checking what the Web Store is serving
+
+The digest above identifies the upload, and nothing on your disk can be compared against
+it. Google unpacks every upload and repacks it as a CRX signed with its own key, and Chrome
+then rewrites files as it installs them — it re-serialises `manifest.json` and injects a
+`key`, and re-encodes every icon through its own PNG encoder. Comparing a release zip to
+the installed files reports tampering on a completely honest install. It is an appealing
+check and it does not work.
+
+Google does leave something usable behind. Beside every Web Store install, Chrome stores
+`_metadata/verified_contents.json` — Google's **signed record of the hash of each file as
+uploaded**, before any of that rewriting. Every release publishes a content digest over the
+same hashes, so the two can be compared:
+
+```bash
+node scripts/verify-install.mjs --zip website-blocker-1.0.0.zip --installed <extension-dir>
+```
+
+If the digests agree, the package Google received and signed is this release, file for
+file. If they do not, it names each file that differs.
+
+What this proves is worth stating precisely: that **the package the store is serving was
+built from this release**. It trusts `verified_contents.json` as Chrome wrote it — the
+signature over it is Google's and is not checked here, though Chrome refuses to run an
+extension whose files disagree with it. [docs/RELEASING.md](docs/RELEASING.md) has the
+per-platform paths and how to cut a release.
 
 ## Development
 
