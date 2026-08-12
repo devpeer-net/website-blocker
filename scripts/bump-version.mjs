@@ -73,5 +73,5 @@ writeFileSync(changelogPath, opened)
 console.log(`bumped to ${version}`)
 console.log('next: describe the change under the new CHANGELOG heading, then')
 console.log(
-  `  git commit -am "Release ${version}" && git tag v${version} && git push --follow-tags`,
+  `  git commit -am "Release ${version}" && git tag v${version} && git push origin HEAD v${version}`,
 )
