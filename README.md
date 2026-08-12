@@ -105,9 +105,9 @@ exact commit. The zip attached to the release is the same file that goes to the 
 and you can prove it:
 
 ```bash
-gh release download v1.0.0 --repo devpeer-net/website-blocker
-sha256sum -c website-blocker-1.0.0.zip.sha256
-gh attestation verify website-blocker-1.0.0.zip --repo devpeer-net/website-blocker
+gh release download v1.0.1 --repo devpeer-net/website-blocker
+sha256sum -c website-blocker-1.0.1.zip.sha256
+gh attestation verify website-blocker-1.0.1.zip --repo devpeer-net/website-blocker
 ```
 
 The last command trusts nothing in this repository — not the release page, not the
@@ -129,7 +129,7 @@ uploaded**, before any of that rewriting. Every release publishes a content dige
 same hashes, so the two can be compared:
 
 ```bash
-node scripts/verify-install.mjs --zip website-blocker-1.0.0.zip --installed <extension-dir>
+node scripts/verify-install.mjs --zip website-blocker-1.0.1.zip --installed <extension-dir>
 ```
 
 If the digests agree, the package Google received and signed is this release, file for

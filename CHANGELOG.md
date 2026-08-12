@@ -14,9 +14,9 @@ full semver, because Chrome rejects pre-release suffixes such as `1.1.0-rc.1`.
 
 ## [1.0.1] — 2026-08-12
 
-No change to the extension itself. Every file under `src/` and `public/` is byte-identical
-to 1.0.0 apart from the version string, and the built `dist/` reproduces the same content
-digest 1.0.0 was built from.
+No change to the extension itself. The only difference from 1.0.0 anywhere under `src/` or
+`public/` is the version string in `public/manifest.json` — so the content digest below is
+not the one 1.0.0 would have had, and could not be: the version is part of what is hashed.
 
 What changes is that this is the first version you can check. 1.0.0 was uploaded to the
 Chrome Web Store by hand, with nothing published to compare it against. 1.0.1 is built by

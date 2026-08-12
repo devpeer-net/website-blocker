@@ -14,7 +14,7 @@ pnpm release:bump 1.1.0        # package.json, manifest, and a dated CHANGELOG h
 $EDITOR CHANGELOG.md           # say what changed under the new heading
 git commit -am "Release 1.1.0"
 git tag v1.1.0
-git push --follow-tags
+git push origin main v1.1.0    # not --follow-tags: that pushes annotated tags only
 ```
 
 The tag is the trigger. Everything below happens on its own, except the one step that
