@@ -187,7 +187,9 @@ function report(label, digest, count, extra = '') {
   console.log(`${label.padEnd(10)} ${digest}  (${count} files${extra})`)
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) main()
+// argv[1] is undefined under `node -e` and in some loaders, and pathToFileURL throws on
+// undefined — which would crash package.mjs's import rather than skipping the CLI.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main()
 
 function main() {
   const options = {}
