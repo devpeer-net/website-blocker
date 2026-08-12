@@ -1,6 +1,6 @@
 {
   "name": "website-blocker",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Chrome extension that blocks distracting websites. No tracking, no network calls, no accounts.",
   "license": "MIT",

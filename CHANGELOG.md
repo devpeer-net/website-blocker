@@ -12,6 +12,25 @@ full semver, because Chrome rejects pre-release suffixes such as `1.1.0-rc.1`.
 
 ## [Unreleased]
 
+## [1.0.1] — 2026-08-12
+
+No change to the extension itself. Every file under `src/` and `public/` is byte-identical
+to 1.0.0 apart from the version string, and the built `dist/` reproduces the same content
+digest 1.0.0 was built from.
+
+What changes is that this is the first version you can check. 1.0.0 was uploaded to the
+Chrome Web Store by hand, with nothing published to compare it against. 1.0.1 is built by
+[the release workflow](.github/workflows/release.yml) and arrives with a GitHub Release
+carrying the zip, its SHA-256, a Sigstore build provenance attestation, and a content
+digest that [`scripts/verify-install.mjs`](scripts/verify-install.mjs) can check against
+the copy Chrome installed from the store.
+
+### Fixed
+
+- `scripts/verify-install.mjs` no longer crashes when imported from a context with no
+  `process.argv[1]`, such as `node -e` — `pathToFileURL(undefined)` throws, which took
+  down `scripts/package.mjs` rather than skipping the CLI branch.
+
 ## [1.0.0] — 2026-08-08
 
 First release. Published to the Chrome Web Store as
