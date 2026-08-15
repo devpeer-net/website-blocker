@@ -29,10 +29,13 @@
  * serialisation of that rewrite is not reproducible from here, so for `manifest.json` —
  * and only for it — a signed-hash mismatch falls back to comparing the release manifest
  * against the *installed* one as parsed JSON, ignoring exactly the two keys with a known
- * injector: `update_url` (the store) and `key` (Chrome, from the CRX header). Any other
- * difference still fails. The installed manifest sits inside the same trust boundary
- * `hashesFromInstall` already accepts for `verified_contents.json`: a file as Chrome
- * wrote it, guarded by Chrome's own content verification.
+ * injector, and only with the values those injectors write: `update_url` must be the
+ * store's own endpoint, and `key` must derive the extension id Google signed for. A
+ * foreign update_url is a difference, not an injection. Any other difference still
+ * fails. The installed manifest sits inside the trust boundary `hashesFromInstall`
+ * already accepts for `verified_contents.json` — a file as Chrome wrote it — though
+ * unlike that record it carries no Google signature even in principle, only Chrome's
+ * install-time content verification.
  *
  * The hashes are Chrome's "treehash": each file split into 4096-byte blocks, each block
  * SHA-256'd, then those hashes combined up a Merkle tree with a branch factor of
@@ -162,14 +165,30 @@ function hashesFromZip(zipPath) {
   }
 }
 
+/** The one value the store injects. Any other update_url is a real difference. */
+const STORE_UPDATE_URL = 'https://clients2.google.com/service/update2/crx'
+
+/**
+ * The extension id Chrome derives from a `key` value: first 16 bytes of the SHA-256 of
+ * the DER public key, each nibble written as a letter a–p. Undecodable input is simply
+ * an id that matches nothing.
+ */
+function idFromKey(key) {
+  const digest = sha256(Buffer.from(String(key), 'base64')).subarray(0, 16)
+  return [...digest]
+    .map((byte) => 'abcdefghijklmnop'[byte >> 4] + 'abcdefghijklmnop'[byte & 15])
+    .join('')
+}
+
 /**
  * Whether the released manifest and the installed one describe the same extension once
- * the two injected keys — `update_url` (the store) and `key` (Chrome) — are removed from
- * the installed copy. Both rewrites re-serialise, so key order and whitespace are
- * serialiser artefacts and the comparison is over a canonical form, not bytes. Anything
- * that does not parse is a mismatch, never a pass.
+ * the two injected keys are removed from the installed copy — and only with the values
+ * their injectors are known to write: `update_url` must be the store's constant, and
+ * `key` must derive the id Google signed for. Both rewrites re-serialise, so key order
+ * and whitespace are serialiser artefacts and the comparison is over a canonical form,
+ * not bytes. Anything that does not parse is a mismatch, never a pass.
  */
-export function manifestsAgree(releasedJson, installedJson) {
+export function manifestsAgree(releasedJson, installedJson, itemId) {
   const canonical = (value) => {
     if (value === null || typeof value !== 'object') return JSON.stringify(value)
     if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`
@@ -186,8 +205,8 @@ export function manifestsAgree(releasedJson, installedJson) {
   } catch {
     return false
   }
-  delete installed.update_url
-  delete installed.key
+  if (installed.update_url === STORE_UPDATE_URL) delete installed.update_url
+  if ('key' in installed && idFromKey(installed.key) === itemId) delete installed.key
   return canonical(released) === canonical(installed)
 }
 
@@ -324,12 +343,17 @@ function main() {
     // The signed manifest hash covers the store's rewrite, never the uploaded bytes —
     // see the header. Fall back to the installed copy, which Chrome verifies against
     // its own install-time hashes, and accept only the two documented injections.
-    if (path === 'manifest.json') {
-      const installedManifestPath = join(options.installed, path)
+    if (path === 'manifest.json' && released.manifest !== undefined) {
+      // An unreadable installed manifest is a recorded difference, never a crash or a pass.
+      let installedManifest
+      try {
+        installedManifest = readFileSync(join(options.installed, path), 'utf8')
+      } catch {
+        installedManifest = undefined
+      }
       if (
-        released.manifest !== undefined &&
-        existsSync(installedManifestPath) &&
-        manifestsAgree(released.manifest, readFileSync(installedManifestPath, 'utf8'))
+        installedManifest !== undefined &&
+        manifestsAgree(released.manifest, installedManifest, install.itemId)
       ) {
         console.log(
           'manifest.json: signed hash covers the store-injected update_url; the installed',
