@@ -4,7 +4,7 @@ import { defineConfig } from 'vitest/config'
 // `environment: 'node'` on purpose: everything under src/core is pure, so there is no
 // `chrome` namespace and no DOM to fake. That is the whole point of the core/platform split.
 export default defineConfig({
-  resolve: { alias: { '@': resolve(__dirname, 'src') } },
+  resolve: { alias: { '@': resolve(import.meta.dirname, 'src') } },
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
