@@ -128,6 +128,14 @@ uploaded**, before any local rewriting. Comparing the release zip against it ans
 question actually worth asking — *is the package Google received the one published here?* —
 and is unaffected by whatever Chrome did afterwards.
 
+With one exception: the store rewrites `manifest.json` server-side *before* signing,
+injecting the `update_url` that points updates back at the store. The signed manifest hash
+therefore never matches the uploaded one, and for that file — only — the checker falls back
+to comparing the release manifest against the installed one as parsed JSON, ignoring the
+two injected keys (`update_url` from the store, `key` from Chrome) and only when they hold
+the values their injectors write: the store's own update endpoint, and a key that derives
+the extension id Google signed for. Any other manifest difference still fails.
+
 Those hashes are Chrome's "treehash": the file split into 4096-byte blocks, each block
 SHA-256'd, combined up a Merkle tree with branch factor 128, base64url encoded.
 `scripts/verify-install.mjs` implements it; `scripts/package.mjs` emits a digest over the
@@ -165,8 +173,12 @@ difference names every file, before exiting non-zero.
 of this extension at this version, was built from this release. It does not verify Google's
 signature over `verified_contents.json` — that would need Google's key, and Chrome already
 refuses to run an extension whose files disagree with that record. So the trust boundary is
-that file as Chrome wrote it. Anyone who can rewrite it locally can also rewrite the
-extension, and at that point the browser is the thing that has been compromised.
+that file — and, for the manifest fallback above, the installed `manifest.json` — as Chrome
+wrote them. The two are not quite equals: `verified_contents.json` carries a Google
+signature that could in principle be verified some day, while the installed manifest is
+guarded only by Chrome's locally generated install-time hashes. In practice the line is the
+same — anyone who can rewrite them locally can also rewrite the extension, and at that
+point the browser is the thing that has been compromised.
 
 A mismatch means the store is serving something other than this release. That is worth
 treating as an incident rather than a curiosity.
