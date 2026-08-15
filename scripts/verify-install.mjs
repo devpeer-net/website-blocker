@@ -205,6 +205,10 @@ export function manifestsAgree(releasedJson, installedJson, itemId) {
   } catch {
     return false
   }
+  // Valid JSON that is not an object — null, a number, an array — is a mismatch too,
+  // not a crash on the property accesses below.
+  const isObject = (value) => typeof value === 'object' && value !== null && !Array.isArray(value)
+  if (!isObject(released) || !isObject(installed)) return false
   if (installed.update_url === STORE_UPDATE_URL) delete installed.update_url
   if ('key' in installed && idFromKey(installed.key) === itemId) delete installed.key
   return canonical(released) === canonical(installed)
